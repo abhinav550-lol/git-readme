@@ -1,0 +1,45 @@
+Project - Git README 
+
+*User can login with their Github account to view their profile information and repositories.
+*Based on this information provided by the Github API, we will generate a README file for his/her profile
+	-Right of the bat, we will elevate the permission to read user data and repos, but we can also ask for more permissions if we want to add more features in the future
+	-Show the preview generated and allow them to download the .md file
+	-Or, allow them to directly push the generated README to their Github profile as a new repository named as their username(or something similar)
+	-If, it already exists, we need to override the existing README file in the repo with the new one
+	-This will include stuff like 
+		-Profile picture
+		-Small Description about them
+		-Top languages used in their repos
+		-Badges if any 
+		-Activity and Github Stats , Contribution Graph
+		-List of their repos with links to them (Project they are working on)
+		-Also, for every repo, ask them to ask provide context for the repo (optional)
+		-Socials (Optional)
+*They can also build project repos - This will require more user interaction for getting the context of the project 
+
+Stats Card:
+Your README or webpage uses an image URL like:
+https://some-site.com/api/github-stats?username=abhinav550
+The browser sees it as a normal image and sends a request to that backend.
+The backend:
+reads the username query param
+calls GitHub API
+calculates stats
+builds a visual layout
+returns an image response
+The response has headers like:
+Content-Type: image/svg+xml or image/png
+cache headers so GitHub/README/browser does not re-fetch too often
+
+## for github stats card:
+## aggerate stars over all the repos: https://api.github.com/repos/abhinav550-lol/cine-critic/stargazers
+
+
+## for languages card: for every project, aggerate the languages used 
+https://api.github.com/repos/abhinav550-lol/cine-critic/languages
+
+## chat info about project and images: https://chatgpt.com/c/69d227dd-4b10-83a3-8a50-d66f8459c8c0
+
+Important Features to Implement:
+Rate Limiting on every endpoint with AI api, 5 request per hour for a user
+Authentication using Github oAuth

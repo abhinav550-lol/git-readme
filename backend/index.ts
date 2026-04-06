@@ -58,6 +58,15 @@ app.use(
 
 import userRoutes from './routes/userRoutes.js'
 
+
+app.get('/health' , (req : Request , res : Response) => {
+	res.status(200).json({
+		success: true,
+		message: "Health check passed!"
+	})
+})
+
+
 app.use("/api/user", userRoutes);
 
 
