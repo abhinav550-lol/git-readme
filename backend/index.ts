@@ -27,6 +27,12 @@ import "express-session";
 declare module "express-session" {
   interface SessionData {
     oauthState?: string;
+    tokenData?: {
+      access_token: string;
+      token_type?: string;
+      scope?: string;
+      [key: string]: unknown;
+    };
     githubAccessToken?: string;
     user?: {
       login: string;
@@ -57,6 +63,7 @@ app.use(
 // --------------- Routes ---------------
 
 import userRoutes from './routes/userRoutes.js'
+import profileRoutes from './routes/profileRoutes.js'
 
 
 app.get('/health' , (req : Request , res : Response) => {
@@ -68,6 +75,7 @@ app.get('/health' , (req : Request , res : Response) => {
 
 
 app.use("/api/user", userRoutes);
+app.use("/api/profile", profileRoutes);
 
 
 

@@ -9,17 +9,17 @@ Generate README with AI
 Update README.md
 Add webhook automation later
 */
+
 import crypto from "crypto";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 
 interface UserController {
-  authorizeGithub: RequestHandler;
-  callbackGithub: RequestHandler;
-  logoutGithub: RequestHandler;
-  getUser: RequestHandler;
-  incrementPrivilege: RequestHandler; //Access App Required Information 
+  authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
+  callbackGithub: RequestHandler; 
+  logoutGithub: RequestHandler //destroys session and clears cookie
+  getUser: RequestHandler; //get user, if required in the frontend
 }
 
 const userController: UserController = {
@@ -30,7 +30,7 @@ const userController: UserController = {
 	const state = crypto.randomBytes(16).toString("hex");
 
 	const {elevated_perms} = req.query;
-	const perms = elevated_perms === "true" ? "read:user user:email write:repo_hook" : "read:user user:email";
+	const perms = elevated_perms === "true" ? "read:user user:email repo" : "read:user user:email";
 
 	const params = new URLSearchParams({
 	  client_id: process.env.GITHUB_CLIENT_ID!,
@@ -73,7 +73,59 @@ const userController: UserController = {
 		
 		
 		const tokenData = await tokenResponse.json();
-		console.log(tokenData)
+
+		if (!tokenData?.access_token) {
+		return next(new appError(400, "Failed to get access token from GitHub"));
+		}
+
+		req.session.tokenData = tokenData;
+		req.session.githubAccessToken = tokenData.access_token;
+
+		const githubUserResponse = await fetch("https://api.github.com/user", {
+			headers: {
+				Authorization: `Bearer ${tokenData.access_token}`,
+				Accept: "application/vnd.github+json",
+			},
+		});
+
+		if (!githubUserResponse.ok) {
+			return next(new appError(400, "Failed to fetch GitHub user profile"));
+		}
+
+		const githubUser = await githubUserResponse.json();
+		let email: string | null = githubUser.email ?? null;
+
+		if (!email) {
+			const emailsResponse = await fetch("https://api.github.com/user/emails", {
+				headers: {
+					Authorization: `Bearer ${tokenData.access_token}`,
+					Accept: "application/vnd.github+json",
+				},
+			});
+
+			if (emailsResponse.ok) {
+				const emails = await emailsResponse.json();
+				if (Array.isArray(emails)) {
+					const primaryVerifiedEmail = emails.find(
+						(item: { email?: string; primary?: boolean; verified?: boolean }) =>
+							item.primary && item.verified,
+					);
+					email = primaryVerifiedEmail?.email ?? null;
+				}
+			}
+		}
+
+		req.session.user = {
+			login: githubUser.login,
+			id: githubUser.id,
+			avatar_url: githubUser.avatar_url,
+			name: githubUser.name,
+			email,
+		};
+
+		delete req.session.oauthState;
+		
+		return res.redirect(process.env.FRONTEND_URL!);
 	},
   ),
 
@@ -101,23 +153,26 @@ const userController: UserController = {
       user: req.session.user,
     });
   }),
-  incrementPrivilege: wrapAsyncErrors(
-    async (req: Request, res: Response, next: NextFunction) => {
-
-	},
-  ),
 };
 
+export default userController;
+
 /*
-Session after login 
+
+
 {
   login: 'abhinav550-lol',
   id: 194940960,
   avatar_url: 'https://avatars.githubusercontent.com/u/194940960?v=4',
   name: 'Abhinav Mishra',
-  email: null
+  email: 'maabhinav550@gmail.com'
 }
-and the access token too
+{
+  access_token: 'gho_XXXXXXXXXX',
+  token_type: 'bearer',
+  scope: 'read:user,repo,user:email'
+}
+
+
 */
 
-export default userController;
