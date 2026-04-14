@@ -4,8 +4,10 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import dotenv from "dotenv";
-
 dotenv.config();
+
+import { connectRedis } from "./cache/redisConnect.js";
+
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -64,6 +66,7 @@ app.use(
 
 import userRoutes from './routes/userRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
+import errorMiddleware from "./error/errorMiddleware.js";
 
 
 app.get('/health' , (req : Request , res : Response) => {
@@ -78,18 +81,17 @@ app.use("/api/user", userRoutes);
 app.use("/api/profile", profileRoutes);
 
 
-
-
-app.get("/api/test", (_req: Request, res: Response) => {
-  res.json({
-    success: true,
-    message: "🚀 Backend is up and running!",
-  });
-});
-
-
+app.use(errorMiddleware);
 // --------------- Start Server ---------------
+async function run(){
+	app.listen(PORT, () => {
+	  console.log(`✅ Server running on http://localhost:${PORT}`);
+	});
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running on http://localhost:${PORT}`);
+	await connectRedis();
+}
+
+run().catch((err) => {
+	console.error("Error starting server:", err);
+	process.exit(1);
 });

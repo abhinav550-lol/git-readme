@@ -4,6 +4,9 @@ import isLoggedIn from "../utils/isLoggedIn.js";
 
 const router = Router();
 
-router.get("/stats-card", profileController.generateStatsCard);
+router.get("/data/contribution-stats", profileController.getContributionStats);
+
+
+
 
 export default router;

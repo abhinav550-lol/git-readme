@@ -2,7 +2,6 @@ import type { NextFunction , Request , Response } from "express";
 import appError from "./appError.js";
 
 function errorMiddleware(err : unknown , req : Request , res : Response , next : NextFunction){
-
 	if(err instanceof appError){
 		return res.status(err.status).json({
 			success : false,
@@ -17,4 +16,4 @@ function errorMiddleware(err : unknown , req : Request , res : Response , next :
 	})
 }
 
-export default errorMiddleware
+export default errorMiddleware	
