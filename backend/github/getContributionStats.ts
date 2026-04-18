@@ -13,6 +13,9 @@ interface ContributionsInterface {
   maxStreak: number;
 }
 
+export {ContributionsInterface};
+
+
 async function getUserCreationDate(username: string): Promise<string> {
   //fetch the user data from github api and return the created_at field, in yyyy-mm-dd format
   try{
@@ -252,7 +255,7 @@ async function getUserContributions(username: string) {
       from = getFrom(to);
 
       // Only sleep if there's a next request to make
-      if (!reachedPresent) await sleep(1500);
+      if (!reachedPresent) await sleep(500);
     } catch (err) {
       console.error(`Error fetching data for ${from} to ${to}:`, err);
       throw new appError(500, "Failed to fetch contributions data");

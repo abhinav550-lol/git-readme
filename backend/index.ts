@@ -68,7 +68,6 @@ import userRoutes from './routes/userRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
 import errorMiddleware from "./error/errorMiddleware.js";
 
-
 app.get('/health' , (req : Request , res : Response) => {
 	res.status(200).json({
 		success: true,
