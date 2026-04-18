@@ -1,20 +1,20 @@
 import {ContributionsInterface} from "./getContributionStats.js"
 
 
-function generateDarkModeCard(contributionsData : ContributionsInterface) : string {
+function generateDarkModeCard(contributionsData: ContributionsInterface): string {
 	return `
-	<svg width="460" height="195" viewBox="0 0 460 195" xmlns="http://www.w3.org/2000/svg">
+	<svg width="500" height="230" viewBox="0 0 500 230" xmlns="http://www.w3.org/2000/svg">
 
   <!-- Background -->
   <rect width="100%" height="100%" rx="4" fill="#1e293b"/>
 
   <!-- Title -->
-  <text x="230" y="32" fill="#ade8f4" font-size="16" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3" opacity="0.65">
+  <text x="250" y="32" fill="#ade8f4" font-size="16" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3" opacity="0.65">
     CONTRIBUTION STATS
   </text>
 
   <!-- Top Divider -->
-  <line x1="24" y1="46" x2="436" y2="46" stroke="#ade8f4" stroke-width="0.5" opacity="0.18"/>
+  <line x1="24" y1="46" x2="476" y2="46" stroke="#ade8f4" stroke-width="0.5" opacity="0.18"/>
 
   <!-- Rank Circle -->
   <circle cx="98" cy="122" r="56" fill="none" stroke="#ade8f4" stroke-width="1.8" opacity="0.85"/>
@@ -31,7 +31,7 @@ function generateDarkModeCard(contributionsData : ContributionsInterface) : stri
   </text>
 
   <!-- Vertical Divider -->
-  <line x1="178" y1="56" x2="178" y2="178" stroke="#ade8f4" stroke-width="0.5" opacity="0.18"/>
+  <line x1="178" y1="56" x2="178" y2="200" stroke="#ade8f4" stroke-width="0.5" opacity="0.18"/>
 
   <!-- Total Contributions Block -->
   <text x="202" y="80" fill="#ade8f4" font-size="14" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" letter-spacing="2" opacity="0.55">
@@ -40,13 +40,13 @@ function generateDarkModeCard(contributionsData : ContributionsInterface) : stri
   <text x="202" y="112" fill="#ade8f4" font-size="30" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="700">
     ${contributionsData.totalContributions}
   </text>
-  
+
   <text x="202" y="128" fill="#ade8f4" font-size="11" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" opacity="0.45" letter-spacing="0.5">
     ${contributionsData.accountCreationDate} – Present
   </text>
 
   <!-- Mid Divider -->
-  <line x1="190" y1="140" x2="440" y2="138" stroke="#ade8f4" stroke-width="0.4" opacity="0.15"/>
+  <line x1="190" y1="140" x2="480" y2="140" stroke="#ade8f4" stroke-width="0.4" opacity="0.15"/>
 
   <!-- Max Streak Label -->
   <text x="202" y="158" fill="#ade8f4" font-size="14" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" letter-spacing="2" opacity="0.55">
@@ -61,21 +61,20 @@ function generateDarkModeCard(contributionsData : ContributionsInterface) : stri
 </svg>
 	`;
 }
-
 function generateLightModeCard(contributionsData: ContributionsInterface): string {
 	return `
-	<svg width="460" height="195" viewBox="0 0 460 195" xmlns="http://www.w3.org/2000/svg">
+	<svg width="500" height="230" viewBox="0 0 500 230" xmlns="http://www.w3.org/2000/svg">
 
   <!-- Background -->
   <rect width="100%" height="100%" rx="4" fill="#f8fafc"/>
 
   <!-- Title -->
-  <text x="230" y="32" fill="#334155" font-size="16" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3" opacity="0.75">
+  <text x="250" y="32" fill="#334155" font-size="16" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3" opacity="0.75">
     CONTRIBUTION STATS
   </text>
 
   <!-- Top Divider -->
-  <line x1="24" y1="46" x2="436" y2="46" stroke="#cbd5e1" stroke-width="1" opacity="1"/>
+  <line x1="24" y1="46" x2="476" y2="46" stroke="#cbd5e1" stroke-width="1" opacity="1"/>
 
   <!-- Rank Circle -->
   <circle cx="98" cy="122" r="56" fill="none" stroke="#16a34a" stroke-width="2" opacity="0.9"/>
@@ -92,7 +91,7 @@ function generateLightModeCard(contributionsData: ContributionsInterface): strin
   </text>
 
   <!-- Vertical Divider -->
-  <line x1="178" y1="56" x2="178" y2="178" stroke="#cbd5e1" stroke-width="1" opacity="1"/>
+  <line x1="178" y1="56" x2="178" y2="200" stroke="#cbd5e1" stroke-width="1" opacity="1"/>
 
   <!-- Total Contributions Label -->
   <text x="202" y="80" fill="#64748b" font-size="14" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" letter-spacing="2">
@@ -110,7 +109,7 @@ function generateLightModeCard(contributionsData: ContributionsInterface): strin
   </text>
 
   <!-- Mid Divider -->
-  <line x1="190" y1="140" x2="440" y2="140" stroke="#cbd5e1" stroke-width="1" opacity="1"/>
+  <line x1="190" y1="140" x2="480" y2="140" stroke="#cbd5e1" stroke-width="1" opacity="1"/>
 
   <!-- Max Streak Label -->
   <text x="202" y="158" fill="#64748b" font-size="14" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" letter-spacing="2">

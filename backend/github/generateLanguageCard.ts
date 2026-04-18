@@ -17,10 +17,10 @@ export function generateLanguageCard(languageStats: LanguageStats, color_scheme?
     const rightCol  = top10.slice(5);
     const hasRight  = rightCol.length > 0;
 
-    const ROW_H  = 26;
+    const ROW_H   = 32;
     const START_Y = 72;
-    const rows   = Math.max(leftCol.length, rightCol.length);
-    const height = START_Y + (rows - 1) * ROW_H + 30;
+    const rows    = Math.max(leftCol.length, rightCol.length);
+    const height  = START_Y + (rows - 1) * ROW_H + 30;
 
     const renderCol = (
         col: [string, [number, string]][],
@@ -30,34 +30,34 @@ export function generateLanguageCard(languageStats: LanguageStats, color_scheme?
         xPct: number
     ): string =>
         col.map(([lang, [, pct]], i) => {
-            const y       = START_Y + i * ROW_H;
-            const num     = startIdx + i;
-            const nameX   = num >= 10 ? xName + 6 : xName; // nudge name for double-digit
+            const y     = START_Y + i * ROW_H;
+            const num   = startIdx + i;
+            const nameX = num >= 10 ? xName + 6 : xName;
             return `
-  <text x="${xNum}"  y="${y}" fill="${accent}" font-size="12"  font-family="'Trebuchet MS', 'Segoe UI', sans-serif" opacity="0.4">${num}.</text>
+  <text x="${xNum}"  y="${y}" fill="${accent}" font-size="12" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" opacity="0.4">${num}.</text>
   <text x="${nameX}" y="${y}" fill="${accent}" font-size="14" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600">${lang}</text>
   <text x="${xPct}"  y="${y}" fill="${accent}" font-size="12" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" opacity="0.65" text-anchor="end">${pct}</text>`;
         }).join('');
 
-    return `<svg width="460" height="${height}" viewBox="0 0 460 ${height}" xmlns="http://www.w3.org/2000/svg">
+    return `<svg width="500" height="${height}" viewBox="0 0 500 ${height}" xmlns="http://www.w3.org/2000/svg">
 
   <!-- Background -->
   <rect width="100%" height="100%" rx="4" fill="${bg}"/>
 
   <!-- Title -->
-  <text x="230" y="32" fill="${accent}" font-size="12" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3" opacity="0.65">TOP LANGUAGES</text>
+  <text x="250" y="32" fill="${accent}" font-size="16" font-family="'Trebuchet MS', 'Segoe UI', sans-serif" font-weight="600" text-anchor="middle" letter-spacing="3" opacity="0.65">TOP LANGUAGES</text>
 
   <!-- Top Divider -->
-  <line x1="24" y1="46" x2="436" y2="46" stroke="${dividerColor}" stroke-width="${dividerW}" opacity="${dividerOp}"/>
+  <line x1="24" y1="46" x2="476" y2="46" stroke="${dividerColor}" stroke-width="${dividerW}" opacity="${dividerOp}"/>
 
   ${hasRight ? `<!-- Vertical Divider -->
-  <line x1="228" y1="54" x2="228" y2="${height - 12}" stroke="${dividerColor}" stroke-width="${dividerW}" opacity="${dividerOp}"/>` : ''}
+  <line x1="248" y1="54" x2="248" y2="${height - 12}" stroke="${dividerColor}" stroke-width="${dividerW}" opacity="${dividerOp}"/>` : ''}
 
   <!-- Left Column -->
-  ${renderCol(leftCol as [string, [number, string]][], 1, 24, 38, 220)}
+  ${renderCol(leftCol as [string, [number, string]][], 1, 24, 40, 240)}
 
   ${hasRight ? `<!-- Right Column -->
-  ${renderCol(rightCol as [string, [number, string]][], 6, 240, 254, 444)}` : ''}
+  ${renderCol(rightCol as [string, [number, string]][], 6, 260, 276, 480)}` : ''}
 
 </svg>`;
 }

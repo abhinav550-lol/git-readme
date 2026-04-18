@@ -12,22 +12,35 @@ interface LanguageStats {
 
 /** Get Public Repos  */
 async function getPublicRepos(username: string) {
-	const BASE_API = `https://api.github.com/users/${username}/repos`
+  const repos = [];
+  let page = 1;
 
-	const response = await fetch(BASE_API , {
+  while (true) {
+    const url = `https://api.github.com/users/${username}/repos?per_page=100&page=${page}`;
+
+    const response = await fetch(url, {
       headers: {
         Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       },
     });
-		
-	if (!response.ok) {
-		throw new appError(response.status, `Failed to fetch repositories for user ${username}`);
-	}``
-	const data = await response.json();
 
-	return data;
+    if (!response.ok) {
+      throw new appError(
+        response.status,
+        `Failed to fetch repositories for user ${username}`
+      );
+    }
+
+    const data = await response.json();
+
+    if (data.length === 0) break; // no more repos
+
+    repos.push(...data);
+    page++;
+  }
+
+  return repos;
 }
-
 
 /** Retrieves language statistics for a given GitHub username */
 async function getLanguageStats(username : string) : Promise<LanguageStats> {
@@ -89,7 +102,7 @@ async function getLanguageStats(username : string) : Promise<LanguageStats> {
 	for(const lang in languageStats.languages){
 		const size = languageStats.languages[lang][0];
 		const percentage = totalSize > 0 ? (size / totalSize) * 100 : 0;
-		languageStats.languages[lang][1] = (percentage.toFixed(1) + "%");
+		languageStats.languages[lang][1] = (percentage.toFixed(2) + "%");
 	}
 	}catch(err){
 
