@@ -63,9 +63,9 @@ async function getUserContributions(username: string) {
     rank: "C", //C -> B -> A -> A+ -> S
     totalContributions: 0,
     accountCreationDate: userCreationDate,
+    maxStreak: 0,
     yearWiseContributions: [],
     dayWiseContributions: [],
-    maxStreak: 0,
 };
 
 // Set to track seen dates — avoids O(n²) duplicate check
@@ -164,6 +164,7 @@ async function getUserContributions(username: string) {
 
     $(dayClass).each((i, elem) => {
       const dataDate = $(elem).attr("data-date");
+	  if(dataDate && dataDate >= userCreationDate && dataDate <= currDate){
       const id = $(elem).attr("id");
 
       if (dataDate && id) {
@@ -173,6 +174,7 @@ async function getUserContributions(username: string) {
 
         days.push({ date: dataDate, contributions });
       }
+	}
     });
 
     return { year, contributions: yearContributions, days };

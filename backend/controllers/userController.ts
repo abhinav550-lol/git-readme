@@ -14,12 +14,12 @@ import crypto from "crypto";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
+import User from "../models/UserModel.js";
 
 interface UserController {
   authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
   callbackGithub: RequestHandler; 
   logoutGithub: RequestHandler //destroys session and clears cookie
-  getUser: RequestHandler; //get user, if required in the frontend
 }
 
 const userController: UserController = {
@@ -78,8 +78,6 @@ const userController: UserController = {
 		return next(new appError(400, "Failed to get access token from GitHub"));
 		}
 
-		req.session.tokenData = tokenData;
-		req.session.githubAccessToken = tokenData.access_token;
 
 		const githubUserResponse = await fetch("https://api.github.com/user", {
 			headers: {
@@ -115,16 +113,16 @@ const userController: UserController = {
 			}
 		}
 
-		req.session.user = {
-			login: githubUser.login,
-			id: githubUser.id,
-			avatar_url: githubUser.avatar_url,
-			name: githubUser.name,
-			email,
-		};
-
-		delete req.session.oauthState;
+		const foundUser = await User.findByGithubId(githubUser.id);
+		if(!foundUser){
+			await User.create({
+				githubId : githubUser.id,
+				accessToken : tokenData.access_token
+			});
+		}
 		
+		//Worker For Generating Cards
+
 		return res.redirect(process.env.FRONTEND_URL!);
 	},
   ),
@@ -138,21 +136,6 @@ const userController: UserController = {
       });
     },
   ),
-  getUser: wrapAsyncErrors(async (req: Request, res: Response) => {
-    if (!req.session.user) {
-      return res.status(200).json({
-        success: true,
-        message: "No user yet.",
-        user: null,
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "User fetched successfully.",
-      user: req.session.user,
-    });
-  }),
 };
 
 export default userController;

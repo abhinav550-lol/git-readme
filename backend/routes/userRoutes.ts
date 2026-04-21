@@ -8,6 +8,5 @@ const router = Router();
 router.get("/auth/github", userController.authorizeGithub);
 router.get("/auth/github/callback", userController.callbackGithub);
 router.get("/auth/github/logout", isLoggedIn , userController.logoutGithub);
-router.get("/auth/github/user", userController.getUser);
 
 export default router;

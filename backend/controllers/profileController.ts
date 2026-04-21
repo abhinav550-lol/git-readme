@@ -17,10 +17,15 @@ interface ProfileController {
 }
 
 const profileController: ProfileController = {
-	/** Generates a user profile README*/
+	/**
+	 * Generates a profile README payload for the authenticated user.
+	 */
 	generateProfile: wrapAsyncErrors(async (req, res, next) => { }),
 
-	/** Generates contribution Stats*/
+	/**
+	 * Fetches raw contribution statistics for a GitHub username.
+	 * Expects `username` in the query string and returns JSON data.
+	 */
 	getContributionStats: wrapAsyncErrors(async (req, res, next) => {
 		const { username } = req.query as { username?: string };
 
@@ -35,11 +40,11 @@ const profileController: ProfileController = {
 			data: contributionsData,
 		});
 	}),
-	/** Generates contribution Stats Card
-	 * @params request - username, color_scheme as string 
-	 * 
-	*/
-getContributionCard: wrapAsyncErrors(async (req, res, next) => {
+	/**
+	 * Generates an SVG contribution stats card for a GitHub username.
+	 * Query params: `username` (required), `color_scheme` (optional).
+	 */
+	getContributionCard: wrapAsyncErrors(async (req, res, next) => {
 		const { username } = req.query as { username?: string };
 		const {color_scheme} = req.query as { color_scheme?: string };
 
@@ -67,6 +72,10 @@ getContributionCard: wrapAsyncErrors(async (req, res, next) => {
 		}
 	}),
 
+	/**
+	 * Generates an SVG language stats card for a GitHub username.
+	 * Query params: `username` (required), `color_scheme` (optional).
+	 */
 	getLanguageCard: wrapAsyncErrors(async (req, res, next) => {
 		const { username } = req.query as { username?: string };
 		const { color_scheme } = req.query as { color_scheme?: string };
@@ -91,7 +100,12 @@ getContributionCard: wrapAsyncErrors(async (req, res, next) => {
 			}
 			return next(new appError(500, "Internal Server Error"));
 		}
-	 }),
+	}),
+
+	/**
+	 * Fetches language usage statistics for a GitHub username.
+	 * Expects `username` in the query string and returns JSON data.
+	 */
 	getLanguageStats: wrapAsyncErrors(async (req, res, next) => {
 		const { username } = req.query as { username?: string };
 
