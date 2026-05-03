@@ -1,14 +1,14 @@
 import axios from "axios";
 import appError from "../error/appError.js";
 
-import client, { connectRedis } from "../cache/redisConnect.js";
-interface LanguageStats {
+
+interface LanguagesInterface {
   total_languages: number;
   total_size: number;
   languages: Record<string, [number, string]>; //LANG_NAME , {size : number, percentage : number}
 }
 
-
+export {LanguagesInterface};
 
 /** Get Public Repos  */
 async function getPublicRepos(username: string) {
@@ -17,21 +17,27 @@ async function getPublicRepos(username: string) {
 
   while (true) {
     const url = `https://api.github.com/users/${username}/repos?per_page=100&page=${page}`;
+		let data = [];
 
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      },
-    });
+		try {
+			const response = await axios.get(url, {
+				headers: {
+					Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+				},
+			});
 
-    if (!response.ok) {
-      throw new appError(
-        response.status,
-        `Failed to fetch repositories for user ${username}`
-      );
-    }
+			data = Array.isArray(response.data) ? response.data : [];
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				const status = err.response?.status ?? 500;
+				throw new appError(
+					status,
+					`Failed to fetch repositories for user ${username}`,
+				);
+			}
 
-    const data = await response.json();
+			throw new appError(500, `Failed to fetch repositories for user ${username}`);
+		}
 
     if (data.length === 0) break; // no more repos
 
@@ -43,20 +49,8 @@ async function getPublicRepos(username: string) {
 }
 
 /** Retrieves language statistics for a given GitHub username */
-async function getLanguageStats(username : string) : Promise<LanguageStats> {
-	if(!client.isOpen){
-		await connectRedis();
-	}
-
-	//Check Cache first
-	const cacheKey = `language_stats:${username}`;
-	const cachedData = await client.get(cacheKey);
-	if(cachedData){
-		return JSON.parse(cachedData) as LanguageStats;
-	}
-
-
-	const languageStats: LanguageStats = {
+async function getLanguageStats(username : string) : Promise<LanguagesInterface> {
+	const languageStats: LanguagesInterface = {
 		total_languages: 0,
 		total_size : 0,
 		languages: {},
@@ -95,8 +89,6 @@ async function getLanguageStats(username : string) : Promise<LanguageStats> {
 	//Set total languages count
 	languageStats.total_languages = Object.keys(languageStats.languages).length;
 
-
-
 	// Calculate percentages
 	const totalSize = languageStats.total_size;
 	for(const lang in languageStats.languages){
@@ -123,13 +115,7 @@ async function getLanguageStats(username : string) : Promise<LanguageStats> {
 	// replace with sorted object
 	languageStats.languages = sortedLanguages;
 
-	//Set cache 
-	await client.set(cacheKey, JSON.stringify(languageStats), {
-		EX: 60 * 60, // Cache for 1 hour
-	});
-	
 	return languageStats;
 }
 
-
-export {getLanguageStats , LanguageStats};
+export {getLanguageStats};

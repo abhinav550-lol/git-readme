@@ -6,12 +6,8 @@ const ivLength = Number(process.env.TOKEN_CRYPTO_IV_LENGTH || 12);
 
 function getKeyBuffer(): Buffer {
 	const rawKey = process.env.TOKEN_CRYPTO_KEY;
-
-	if (!rawKey) {
-		throw new Error("TOKEN_CRYPTO_KEY is not set");
-	}
-
-	const key = Buffer.from(rawKey, keyEncoding as BufferEncoding);
+	
+	const key = Buffer.from(rawKey!, keyEncoding as BufferEncoding);
 
 	if (key.length !== 32) {
 		throw new Error("TOKEN_CRYPTO_KEY must be 32 bytes for aes-256-gcm");

@@ -1,13 +1,16 @@
-import { RequestHandler } from "express";
+import { RequestHandler, urlencoded } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 import getUserContributions from "../github/getContributionStats.js";
 import { generateContributionStatsCard } from "../github/generateStatsCard.js";
-import { getLanguageStats } from "../github/getLanguageStats.js";
+import { getLanguageStats, LanguagesInterface } from "../github/getLanguageStats.js";
 
 //Interfaces
 import { ContributionsInterface } from "../github/getContributionStats.js";
 import { generateLanguageCard } from "../github/generateLanguageCard.js";
+import {redisClient} from "../cache/redisConnect.js";
+import User from "../models/UserModel.js";
+import { getGithubIdByUsername } from "../utils/githubUtils.js";
 interface ProfileController {
 	generateProfile: RequestHandler;
 	getContributionStats: RequestHandler;
@@ -33,11 +36,99 @@ const profileController: ProfileController = {
 			return next(new appError(400, "Valid username is required"));
 		}
 
-		const contributionsData: ContributionsInterface = await getUserContributions(username);
+		//Redis Check
+		const key = `contribution_stats:${username}`;
+		const cachedData = await redisClient.get(key);
+		if(cachedData){
+			return res.status(200).json({
+				success: true,
+				data: JSON.parse(cachedData) as ContributionsInterface,
+			});
+		}
+		
+
+		//MONGODB instant document check and return 
+		let contributionsData: ContributionsInterface | null = null;
+
+		const githubId = await getGithubIdByUsername(username);
+		if(!githubId){
+			return next(new appError(404, "GitHub user not found"));
+		}
+
+		const githubIdExists = await  User.githubIdExists(githubId);
+		if(githubIdExists){
+			const user = await User.findByGithubId(githubId);
+			if(user?.userGithubData?.contributionsStats?.updatedAt){ //exists
+				contributionsData = user.userGithubData.contributionsStats.data as ContributionsInterface;
+			}
+
+			//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
+
+		}else{
+			contributionsData = await getUserContributions(username);
+		}
+
+		//Set Redis Cache for 3 hours
+		await redisClient.set(key, JSON.stringify(contributionsData), {
+			EX: 60 * 3 * 60 //3 hours
+		});
 
 		return res.status(200).json({
 			success: true,
 			data: contributionsData,
+		});
+	}),
+	/**
+	 * Fetches language usage statistics for a GitHub username.
+	 * Expects `username` in the query string and returns JSON data.
+	 */
+	getLanguageStats: wrapAsyncErrors(async (req, res, next) => {
+		const { username } = req.query as { username?: string };
+	
+		if (typeof username !== "string" || username.trim() === "") {
+			return next(new appError(400, "Valid username is required"));
+		}
+
+		//Redis Check
+		const key = `language_stats:${username}`;
+		const cachedData = await redisClient.get(key);
+		if(cachedData){
+			return res.status(200).json({
+				success: true,
+				data: JSON.parse(cachedData) as LanguagesInterface,
+			});
+		}
+
+		//MONGODB instant document check and return 
+		let languageStats: LanguagesInterface | null = null;
+
+		const githubId = await getGithubIdByUsername(username);
+		if(!githubId){
+			return next(new appError(404, "GitHub user not found"));
+		}
+
+		const githubIdExists = await  User.githubIdExists(githubId);
+		if(githubIdExists){
+			const user = await User.findByGithubId(githubId);
+			if(user?.userGithubData?.languagesStats?.updatedAt){ //exists
+				languageStats = user?.userGithubData?.languagesStats?.data as LanguagesInterface;
+			}
+
+			//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
+
+		}else{
+			//both cache failed (user not of app) so user get delayed response but fresh data, also update MongoDB with new data and timestamp
+			languageStats = await getLanguageStats(username);
+		}
+
+		//Set Redis Cache for 3 hours
+		await redisClient.set(key, JSON.stringify(languageStats), {
+			EX: 60 * 3 * 60 //3 hours
+		});
+
+		return res.status(200).json({
+			success: true,
+			data: languageStats,
 		});
 	}),
 	/**
@@ -102,24 +193,6 @@ const profileController: ProfileController = {
 		}
 	}),
 
-	/**
-	 * Fetches language usage statistics for a GitHub username.
-	 * Expects `username` in the query string and returns JSON data.
-	 */
-	getLanguageStats: wrapAsyncErrors(async (req, res, next) => {
-		const { username } = req.query as { username?: string };
-
-		if (typeof username !== "string" || username.trim() === "") {
-			return next(new appError(400, "Valid username is required"));
-		}
-
-		const languageStats = await getLanguageStats(username);
-
-		return res.status(200).json({
-			success: true,
-			data: languageStats,
-		});
-	}),
 };
 
 export default profileController;

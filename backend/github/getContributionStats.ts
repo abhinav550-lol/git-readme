@@ -45,15 +45,6 @@ async function getUserCreationDate(username: string): Promise<string> {
 
 
 async function getUserContributions(username: string) {
-	// Redis Cache Check
-	if (!client.isOpen) await connectRedis();
-	const key = `github_contributions_${username}`;
-	
-	const cachedData = await client.get(key);
-	if (cachedData) {
-		return JSON.parse(cachedData);
-	}
-
   //Calculation of contribution data
   const currDate = new Date().toISOString().slice(0, 10); //yyyy-mm-dd format
   const userCreationDate = await getUserCreationDate(username);
@@ -288,9 +279,6 @@ async function getUserContributions(username: string) {
 
   // 4. Compute rank LAST (depends on total + streak)
   contributionsData.rank = computeRank(contributionsData);
-
-  // 5. Cache for 1 hour
-  await client.set(key, JSON.stringify(contributionsData), { EX: 60 * 60 });
 
   return contributionsData;
 }

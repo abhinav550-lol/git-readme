@@ -1,38 +1,31 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
-
-interface ICard {
-  data: string;     
-  updatedAt: Date;  
-}
+import { ContributionsInterface } from "../github/getContributionStats.js";
+import { LanguageStats } from "../github/getLanguageStats.js";
+import { encrypt } from "../utils/tokenCrypt.js";
 
 interface IUserGithubData {
-	
-}
+	contributionsStats : {data : ContributionsInterface , updatedAt: Date} | null,
+	languagesStats :{data : LanguageStats , updatedAt: Date} | null
+};
 
 interface IUser extends Document {
 	githubId : string,
+	email : string | null,
+	perms : "normal" | "elevated",
 	accessToken : string,
-	contributionsCard : ICard,
-	languagesCard : ICard,
 	userGithubData : IUserGithubData;
 }
 
 interface IUserModel extends Model<IUser> {
 	findByGithubId(githubId: string): Promise<IUser | null>;
+	githubIdExists(githubId: string): Promise<IUser | null>;
 }
 
 const userSchema: Schema<IUser> = new Schema({
 	githubId: { type: String, required: true, unique: true },
+	email : { type: String, required: false },
+	perms: { type: String, enum: ["normal", "elevated"], default: "normal" },
 	accessToken: { type: String, required: true },
-
-	contributionsCard: {
-		data: { type: String, default: "" },
-		updatedAt: { type: Date, default: Date.now },
-	},
-	languagesCard: {
-		data: { type: String, default: "" },
-		updatedAt: { type: Date, default: Date.now },
-	},
 	userGithubData : {
 		type : Schema.Types.Mixed,
 		default : {}
@@ -42,6 +35,17 @@ const userSchema: Schema<IUser> = new Schema({
 userSchema.statics.findByGithubId = function (githubId: string) {
 	return this.findOne({ githubId });
 };
+
+userSchema.statics.githubIdExists = function (githubId: string) {
+	return this.findOne({ githubId });
+};
+userSchema.pre("save" , async function(){
+	if(this.isModified("accessToken")){
+		this.accessToken = encrypt(this.accessToken.trim());
+	}
+});
+
+userSchema.index({ githubId: 1 });
 
 const User: IUserModel = mongoose.model<IUser, IUserModel>("User", userSchema);
 

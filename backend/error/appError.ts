@@ -5,7 +5,7 @@ class appError extends Error{
 		this.status = status	
 		this.name = "appError"
 
-		Object.setPrototypeOf(this, appError.prototype);
+		Object.setPrototypeOf(this, new.target.prototype);
 	}
 }
 

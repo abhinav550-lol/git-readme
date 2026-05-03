@@ -15,6 +15,7 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 import User from "../models/UserModel.js";
+import { getGithubEmailByToken, getGithubUserByToken } from "../utils/githubUtils.js";
 
 interface UserController {
   authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
@@ -46,7 +47,7 @@ const userController: UserController = {
   }),
   callbackGithub: wrapAsyncErrors(
     async (req: Request, res: Response, next: NextFunction) => {
-		const { code , state} = req.query;
+		const { code , state } = req.query;
 
 		if(!state || state !== req.session.oauthState){
 			return new appError(400, "Invalid State Parameter");
@@ -74,54 +75,45 @@ const userController: UserController = {
 		
 		const tokenData = await tokenResponse.json();
 
+
 		if (!tokenData?.access_token) {
 		return next(new appError(400, "Failed to get access token from GitHub"));
 		}
-
-
-		const githubUserResponse = await fetch("https://api.github.com/user", {
-			headers: {
-				Authorization: `Bearer ${tokenData.access_token}`,
-				Accept: "application/vnd.github+json",
-			},
-		});
-
-		if (!githubUserResponse.ok) {
-			return next(new appError(400, "Failed to fetch GitHub user profile"));
+		
+		if(!tokenData?.scope){
+			return next(new appError(400, "Failed to get scopes from GitHub"));
 		}
 
-		const githubUser = await githubUserResponse.json();
-		let email: string | null = githubUser.email ?? null;
-
-		if (!email) {
-			const emailsResponse = await fetch("https://api.github.com/user/emails", {
-				headers: {
-					Authorization: `Bearer ${tokenData.access_token}`,
-					Accept: "application/vnd.github+json",
-				},
-			});
-
-			if (emailsResponse.ok) {
-				const emails = await emailsResponse.json();
-				if (Array.isArray(emails)) {
-					const primaryVerifiedEmail = emails.find(
-						(item: { email?: string; primary?: boolean; verified?: boolean }) =>
-							item.primary && item.verified,
-					);
-					email = primaryVerifiedEmail?.email ?? null;
-				}
-			}
+		const githubUser = await getGithubUserByToken(tokenData.access_token);
+		
+		if(!githubUser){
+			return next(new appError(400, "Failed to fetch user data from GitHub"));
 		}
+		
+		const email: string = githubUser?.email ? githubUser.email : (await getGithubEmailByToken(tokenData.access_token)) ;
 
 		const foundUser = await User.findByGithubId(githubUser.id);
 		if(!foundUser){
 			await User.create({
 				githubId : githubUser.id,
-				accessToken : tokenData.access_token
+				accessToken : tokenData.access_token,
+				email : email,
+				perms : tokenData.scope.includes("repo") ? "elevated" : "normal"
 			});
+		}else{
+			if(foundUser.perms === "normal" && tokenData.scope.includes("repo")){
+				foundUser.perms = "elevated";
+			}
+
+			if(foundUser.perms === "elevated" && !tokenData.scope.includes("repo")){
+				foundUser.perms = "normal";
+			}
+
+			foundUser.accessToken = tokenData.access_token;
+			await foundUser.save();
 		}
 		
-		//Worker For Generating Cards
+		//Worker For Generating JSON
 
 		return res.redirect(process.env.FRONTEND_URL!);
 	},

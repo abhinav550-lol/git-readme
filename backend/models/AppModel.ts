@@ -6,7 +6,7 @@ interface IApp extends Document {
 }
 
 const appSchema: Schema<IApp> = new Schema({
-  userCount: {
+  userCount: { //will be incremented when profile creation is successful
 	type: Number,
 	default: 0,
   },
