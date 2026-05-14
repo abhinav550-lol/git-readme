@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import appError from "../error/appError.js";
-import client, { connectRedis } from "../cache/redisConnect.js";
+import {redisClient as client, connectRedis } from "../cache/redisConnect.js";
 import axios from "axios";
 
 //Interface for contribution data

@@ -11,6 +11,7 @@ import { generateLanguageCard } from "../github/generateLanguageCard.js";
 import {redisClient} from "../cache/redisConnect.js";
 import User from "../models/UserModel.js";
 import { getGithubIdByUsername } from "../utils/githubUtils.js";
+import { statsQueue } from "../queue/statsQueue.js";
 interface ProfileController {
 	generateProfile: RequestHandler;
 	getContributionStats: RequestHandler;
@@ -60,10 +61,12 @@ const profileController: ProfileController = {
 			const user = await User.findByGithubId(githubId);
 			if(user?.userGithubData?.contributionsStats?.updatedAt){ //exists
 				contributionsData = user.userGithubData.contributionsStats.data as ContributionsInterface;
+
+				//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
+				
+			}else{
+				contributionsData = await getUserContributions(username);	
 			}
-
-			//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
-
 		}else{
 			contributionsData = await getUserContributions(username);
 		}
