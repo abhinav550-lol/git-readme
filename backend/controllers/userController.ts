@@ -118,6 +118,7 @@ const userController: UserController = {
 		const languageStatsJobExists = await doesJobExist("get-language-stats", githubUser.login);
 		const contributionStatsJobExists = await doesJobExist("get-contribution-stats", githubUser.login);
 		
+		console.log(`Job existence check for user ${githubUser.login}: Language Stats Job - ${languageStatsJobExists}, Contribution Stats Job - ${contributionStatsJobExists}`);
 		if(!languageStatsJobExists){
 			await addJobs("get-language-stats", githubUser.login, githubUser.id);
 		}

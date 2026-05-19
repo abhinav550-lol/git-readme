@@ -12,7 +12,11 @@ const options = {
 	backoff: { type: 'exponential' as const, delay: 1000 },
 	delay: 1000,     
 	removeOnComplete: true,
+	removeOnFail: true,
 }
+
+await statsQueue.clean(0, 1000, "failed");
+console.log("Cleaned failed jobs from the queue");	
 
 export async function addJobs(taskType : string, username : string , githubId : string){
 	console.log(`Adding job to queue: ${taskType} for user ${username} (GitHub ID: ${githubId})`);
@@ -22,6 +26,8 @@ export async function addJobs(taskType : string, username : string , githubId : 
 export async function doesJobExist(taskType : string, username : string) : Promise<boolean>{
 	const jobId = `${taskType}-${username}`;
 	const job = await statsQueue.getJob(jobId);
+
+	console.log(job)
 	return !!job;
 }
 
