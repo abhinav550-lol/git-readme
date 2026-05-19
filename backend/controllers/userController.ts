@@ -16,6 +16,7 @@ import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 import User from "../models/UserModel.js";
 import { getGithubEmailByToken, getGithubUserByToken } from "../utils/githubUtils.js";
+import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 
 interface UserController {
   authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
@@ -113,7 +114,20 @@ const userController: UserController = {
 			await foundUser.save();
 		}
 		
-		//Worker For Generating JSON
+		//Worker For Generating application-specific data JSON
+		const languageStatsJobExists = await doesJobExist("get-language-stats", githubUser.login);
+		const contributionStatsJobExists = await doesJobExist("get-contribution-stats", githubUser.login);
+		
+		if(!languageStatsJobExists){
+			await addJobs("get-language-stats", githubUser.login, githubUser.id);
+		}
+
+		if(!contributionStatsJobExists){
+			await addJobs("get-contribution-stats", githubUser.login, githubUser.id);
+		}
+
+		console.log("J*bs added to queue for user:", githubUser.login);
+
 
 		return res.redirect(process.env.FRONTEND_URL!);
 	},

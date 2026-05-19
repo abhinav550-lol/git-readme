@@ -9,9 +9,9 @@ import { getLanguageStats, LanguagesInterface } from "../github/getLanguageStats
 import { ContributionsInterface } from "../github/getContributionStats.js";
 import { generateLanguageCard } from "../github/generateLanguageCard.js";
 import {redisClient} from "../cache/redisConnect.js";
-import User from "../models/UserModel.js";
+import User, { IUser } from "../models/UserModel.js";
 import { getGithubIdByUsername } from "../utils/githubUtils.js";
-import { statsQueue } from "../queue/statsQueue.js";
+import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 interface ProfileController {
 	generateProfile: RequestHandler;
 	getContributionStats: RequestHandler;
@@ -63,7 +63,10 @@ const profileController: ProfileController = {
 				contributionsData = user.userGithubData.contributionsStats.data as ContributionsInterface;
 
 				//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
-				
+				let jobExists = await doesJobExist("get-contribution-stats", username);
+				if(!jobExists){
+					await addJobs("get-contribution-stats", username, githubId);
+				}
 			}else{
 				contributionsData = await getUserContributions(username);	
 			}
@@ -115,10 +118,15 @@ const profileController: ProfileController = {
 			const user = await User.findByGithubId(githubId);
 			if(user?.userGithubData?.languagesStats?.updatedAt){ //exists
 				languageStats = user?.userGithubData?.languagesStats?.data as LanguagesInterface;
+			
+				//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
+				let jobExists = await doesJobExist("get-language-stats", username);
+				if(!jobExists){
+					await addJobs("get-language-stats", username, githubId);
+				}
+			}else{
+				languageStats = await getLanguageStats(username);
 			}
-
-			//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
-
 		}else{
 			//both cache failed (user not of app) so user get delayed response but fresh data, also update MongoDB with new data and timestamp
 			languageStats = await getLanguageStats(username);
@@ -149,8 +157,23 @@ const profileController: ProfileController = {
 		}
 
 		try {
-			const contributionsData: ContributionsInterface =
-				await getUserContributions(username);
+			const githubId = await getGithubIdByUsername(username);
+			if(!githubId){
+				return next(new appError(404, "GitHub user not found"));
+			}
+
+			const user : IUser | null = await User.findByGithubId(githubId);
+			let contributionsData = null;
+			if(user && user?.userGithubData?.contributionsStats?.updatedAt){
+				contributionsData = user?.userGithubData?.contributionsStats?.data as ContributionsInterface;
+
+				const jobExists = await doesJobExist("get-contribution-stats", username);
+				if(!jobExists){
+					await addJobs("get-contribution-stats", username, githubId);
+				}
+			}else{
+				contributionsData = await getUserContributions(username);
+			}
 
 			const svg = generateContributionStatsCard(contributionsData, color_scheme);
 
@@ -179,7 +202,24 @@ const profileController: ProfileController = {
 		}
 
 		try {
-			const languageStats = await getLanguageStats(username);
+			const githubId = await getGithubIdByUsername(username);
+			if(!githubId){
+				return next(new appError(404, "GitHub user not found"));
+			}
+
+			let languageStats = null;
+
+
+			const user : IUser | null = await User.findByGithubId(githubId);
+			if(user && user?.userGithubData?.languagesStats?.updatedAt){
+				languageStats = user?.userGithubData?.languagesStats?.data as LanguagesInterface;
+				const jobExists = await doesJobExist("get-language-stats", username);
+				if(!jobExists){
+					await addJobs("get-language-stats", username, githubId);
+				}
+			}else{
+				languageStats = await getLanguageStats(username)
+			}
 
 			//Generate SVG card for language stats
 			const svg = generateLanguageCard(languageStats, color_scheme);

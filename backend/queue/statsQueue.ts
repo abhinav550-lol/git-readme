@@ -14,6 +14,19 @@ const options = {
 	removeOnComplete: true,
 }
 
-export async function addJobs(taskType : string, username : string ){
-	await statsQueue.add(taskType , {username} , {...options, jobId : `${taskType}-${username}`});
+export async function addJobs(taskType : string, username : string , githubId : string){
+	console.log(`Adding job to queue: ${taskType} for user ${username} (GitHub ID: ${githubId})`);
+	await statsQueue.add(taskType , {username, githubId} , {...options, jobId : `${taskType}-${username}`});
+}
+
+export async function doesJobExist(taskType : string, username : string) : Promise<boolean>{
+	const jobId = `${taskType}-${username}`;
+	const job = await statsQueue.getJob(jobId);
+	return !!job;
+}
+
+export async function getJob(taskType : string, username : string){
+	const jobId = `${taskType}-${username}`;
+	const job = await statsQueue.getJob(jobId);
+	return job;
 }
