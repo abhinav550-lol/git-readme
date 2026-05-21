@@ -8,7 +8,7 @@ import { getLanguageStats, LanguagesInterface } from "../github/getLanguageStats
 //Interfaces
 import { ContributionsInterface } from "../github/getContributionStats.js";
 import { generateLanguageCard } from "../github/generateLanguageCard.js";
-import {redisClient} from "../cache/redisConnect.js";
+import { redisClient } from "../cache/redisConnect.js";
 import User, { IUser } from "../models/UserModel.js";
 import { getGithubIdByUsername } from "../utils/githubUtils.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
@@ -40,37 +40,41 @@ const profileController: ProfileController = {
 		//Redis Check
 		const key = `contribution_stats:${username}`;
 		const cachedData = await redisClient.get(key);
-		if(cachedData){
+		if (cachedData) {
 			return res.status(200).json({
 				success: true,
 				data: JSON.parse(cachedData) as ContributionsInterface,
 			});
 		}
-		
+
 
 		//MONGODB instant document check and return 
 		let contributionsData: ContributionsInterface | null = null;
 
 		const githubId = await getGithubIdByUsername(username);
-		if(!githubId){
+		if (!githubId) {
 			return next(new appError(404, "GitHub user not found"));
 		}
 
-		const githubIdExists = await  User.githubIdExists(githubId);
-		if(githubIdExists){
+		const githubIdExists = await User.githubIdExists(githubId);
+		if (githubIdExists) {
 			const user = await User.findByGithubId(githubId);
-			if(user?.userGithubData?.contributionsStats?.updatedAt){ //exists
+			if (user?.userGithubData?.contributionsStats?.updatedAt) { //exists
 				contributionsData = user.userGithubData.contributionsStats.data as ContributionsInterface;
 
 				//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
-				let jobExists = await doesJobExist("get-contribution-stats", username);
-				if(!jobExists){
-					await addJobs("get-contribution-stats", username, githubId);
+				const isOld = (Date.now() - user.userGithubData.contributionsStats.updatedAt.getTime()) > (3000 * 60 * 60);
+
+				if (isOld) {
+					let jobExists = await doesJobExist("get-contribution-stats", username);
+					if (!jobExists) {
+						await addJobs("get-contribution-stats", username, githubId);
+					}
 				}
-			}else{
-				contributionsData = await getUserContributions(username);	
+			} else {
+				contributionsData = await getUserContributions(username);
 			}
-		}else{
+		} else {
 			contributionsData = await getUserContributions(username);
 		}
 
@@ -90,7 +94,7 @@ const profileController: ProfileController = {
 	 */
 	getLanguageStats: wrapAsyncErrors(async (req, res, next) => {
 		const { username } = req.query as { username?: string };
-	
+
 		if (typeof username !== "string" || username.trim() === "") {
 			return next(new appError(400, "Valid username is required"));
 		}
@@ -98,7 +102,7 @@ const profileController: ProfileController = {
 		//Redis Check
 		const key = `language_stats:${username}`;
 		const cachedData = await redisClient.get(key);
-		if(cachedData){
+		if (cachedData) {
 			return res.status(200).json({
 				success: true,
 				data: JSON.parse(cachedData) as LanguagesInterface,
@@ -109,25 +113,29 @@ const profileController: ProfileController = {
 		let languageStats: LanguagesInterface | null = null;
 
 		const githubId = await getGithubIdByUsername(username);
-		if(!githubId){
+		if (!githubId) {
 			return next(new appError(404, "GitHub user not found"));
 		}
 
-		const githubIdExists = await  User.githubIdExists(githubId);
-		if(githubIdExists){
+		const githubIdExists = await User.githubIdExists(githubId);
+		if (githubIdExists) {
 			const user = await User.findByGithubId(githubId);
-			if(user?.userGithubData?.languagesStats?.updatedAt){ //exists
+			if (user?.userGithubData?.languagesStats?.updatedAt) { //exists
 				languageStats = user?.userGithubData?.languagesStats?.data as LanguagesInterface;
-			
+
 				//Add to Worker Queue (IMPLEMENTING THIS) to update MongoDB with fresh data,(MONGODB Data Update + Redis Cache Invalidation and Update)
-				let jobExists = await doesJobExist("get-language-stats", username);
-				if(!jobExists){
-					await addJobs("get-language-stats", username, githubId);
+				const isOld = (Date.now() - user.userGithubData.languagesStats.updatedAt.getTime()) > (3000 * 60 * 60);
+
+				if (isOld) {
+					let jobExists = await doesJobExist("get-language-stats", username);
+					if (!jobExists) {
+						await addJobs("get-language-stats", username, githubId);
+					}
 				}
-			}else{
+			} else {
 				languageStats = await getLanguageStats(username);
 			}
-		}else{
+		} else {
 			//both cache failed (user not of app) so user get delayed response but fresh data, also update MongoDB with new data and timestamp
 			languageStats = await getLanguageStats(username);
 		}
@@ -148,7 +156,7 @@ const profileController: ProfileController = {
 	 */
 	getContributionCard: wrapAsyncErrors(async (req, res, next) => {
 		const { username } = req.query as { username?: string };
-		const {color_scheme} = req.query as { color_scheme?: string };
+		const { color_scheme } = req.query as { color_scheme?: string };
 
 		if (!username) {
 			return next(
@@ -158,20 +166,20 @@ const profileController: ProfileController = {
 
 		try {
 			const githubId = await getGithubIdByUsername(username);
-			if(!githubId){
+			if (!githubId) {
 				return next(new appError(404, "GitHub user not found"));
 			}
 
-			const user : IUser | null = await User.findByGithubId(githubId);
+			const user: IUser | null = await User.findByGithubId(githubId);
 			let contributionsData = null;
-			if(user && user?.userGithubData?.contributionsStats?.updatedAt){
+			if (user && user?.userGithubData?.contributionsStats?.updatedAt) {
 				contributionsData = user?.userGithubData?.contributionsStats?.data as ContributionsInterface;
 
 				const jobExists = await doesJobExist("get-contribution-stats", username);
-				if(!jobExists){
+				if (!jobExists) {
 					await addJobs("get-contribution-stats", username, githubId);
 				}
-			}else{
+			} else {
 				contributionsData = await getUserContributions(username);
 			}
 
@@ -203,21 +211,21 @@ const profileController: ProfileController = {
 
 		try {
 			const githubId = await getGithubIdByUsername(username);
-			if(!githubId){
+			if (!githubId) {
 				return next(new appError(404, "GitHub user not found"));
 			}
 
 			let languageStats = null;
 
 
-			const user : IUser | null = await User.findByGithubId(githubId);
-			if(user && user?.userGithubData?.languagesStats?.updatedAt){
+			const user: IUser | null = await User.findByGithubId(githubId);
+			if (user && user?.userGithubData?.languagesStats?.updatedAt) {
 				languageStats = user?.userGithubData?.languagesStats?.data as LanguagesInterface;
 				const jobExists = await doesJobExist("get-language-stats", username);
-				if(!jobExists){
+				if (!jobExists) {
 					await addJobs("get-language-stats", username, githubId);
 				}
-			}else{
+			} else {
 				languageStats = await getLanguageStats(username)
 			}
 
@@ -225,9 +233,9 @@ const profileController: ProfileController = {
 			const svg = generateLanguageCard(languageStats, color_scheme);
 
 			return res
-			.type("image/svg+xml")
-			.set("Cache-Control", "public, max-age=3600")
-			.send(svg);
+				.type("image/svg+xml")
+				.set("Cache-Control", "public, max-age=3600")
+				.send(svg);
 		} catch (err) {
 			if (err instanceof appError) {
 				return next(err);

@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import appError from "../error/appError.js";
 import {redisClient as client, connectRedis } from "../cache/redisConnect.js";
 import axios from "axios";
+import { getUserCreationDate } from "./githubUtils.js";
 
 //Interface for contribution data
 interface ContributionsInterface {
@@ -15,33 +16,6 @@ interface ContributionsInterface {
 
 export {ContributionsInterface};
 
-
-async function getUserCreationDate(username: string): Promise<string> {
-  //fetch the user data from github api and return the created_at field, in yyyy-mm-dd format
-  try{
-  const response = await axios.get(`https://api.github.com/users/${username}`, {
-    headers: {
-      ...(process.env.GITHUB_TOKEN && {
-        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-      }),
-    },
-  });
-
-  const data = await response.data;
-  if (!data?.created_at) throw new appError(404, "User not found");
-  
-  const date = data.created_at.slice(0, 10); //yyyy-mm-dd format
-
-  const regex = /(\d{4})-(\d{2})-(\d{2})/;
-  const match = date.match(regex);
-  if (!match) throw new appError(500, "Invalid date format");
-
-  return date;
-} catch (error) {
-  console.error("Error fetching user creation date:", error);
-  throw new appError(500, "Failed to fetch user creation date");
-}
-}
 
 
 async function getUserContributions(username: string) {

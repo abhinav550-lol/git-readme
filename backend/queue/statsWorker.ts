@@ -74,8 +74,6 @@ const workerFunctions = {
 
 		const user = await User.findByGithubId(githubId);
 
-		console.log(user)
-
 		if (!user) {
 			console.warn(`User with GitHub ID ${githubId} not found in database.`);
 			throw new appError(

@@ -1,0 +1,130 @@
+import axios from "axios";
+import appError from "../error/appError.js";
+
+export async function getUserCreationDate(username: string): Promise<string> {
+	/**
+	 *
+	 * @param username
+	 * @returns account creation date in yyyy-mm-dd format
+	 *
+	 * This function fetches GitHub user data and returns the created_at date
+	 * formatted as yyyy-mm-dd. It throws an appError if the user is not found
+	 * or the date format is invalid.
+	 */
+	try{
+  const response = await axios.get(`https://api.github.com/users/${username}`, {
+	headers: {
+	  ...(process.env.GITHUB_TOKEN && {
+		Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+	  }),
+	},
+  });
+
+  const data = await response.data;
+  if (!data?.created_at) throw new appError(404, "User not found");
+  
+  const date = data.created_at.slice(0, 10); //yyyy-mm-dd format
+
+  const regex = /(\d{4})-(\d{2})-(\d{2})/;
+  const match = date.match(regex);
+  if (!match) throw new appError(500, "Invalid date format");
+
+  return date;
+} catch (error) {
+  console.error("Error fetching user creation date:", error);
+  throw new appError(500, "Failed to fetch user creation date");
+}
+}
+
+
+/** Get Public Repos  */
+export async function getPublicRepos(username: string) {
+	/**
+	 *
+	 * @param username
+	 * @returns list of public repositories for the user
+	 *
+	 * This function fetches all public repositories for a GitHub user by
+	 * paging through the GitHub API until no more repos are returned.
+	 */
+  const repos = [];
+  let page = 1;
+
+  while (true) {
+    const url = `https://api.github.com/users/${username}/repos?per_page=100&page=${page}`;
+		let data = [];
+
+		try {
+			const response = await axios.get(url, {
+				headers: {
+					Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+				},
+			});
+
+			data = Array.isArray(response.data) ? response.data : [];
+		} catch (err) {
+			if (axios.isAxiosError(err)) {
+				const status = err.response?.status ?? 500;
+				throw new appError(
+					status,
+					`Failed to fetch repositories for user ${username}`,
+				);
+			}
+
+			throw new appError(500, `Failed to fetch repositories for user ${username}`);
+		}
+
+    if (data.length === 0) break; // no more repos
+
+    repos.push(...data);
+    page++;
+  }
+
+  return repos;
+}
+
+
+/**
+ * 
+ * @param accessToken 
+ * @returns repos list of the user
+ * 
+ * This function fetches all repositories of a user using their GitHub access token. It makes a GET request to the GitHub API endpoint for user repositories, including the access token in the Authorization header. The response is returned as a JSON object containing the list of repositories.
+ */
+export async function getAllUserRepositories(accessToken : string) : Promise<any> {
+		const response = await axios.get(
+			"https://api.github.com/user/repos?per_page=100",
+			{
+				headers: {
+					Authorization: `Bearer ${accessToken}`,
+					Accept: "application/vnd.github+json"
+				}
+			}
+		);
+
+		return response.data;
+}
+
+/** 
+ * @param username 
+ * @param repoName 
+ * @param accessToken
+ * @return string containing the README.md content or an empty string
+ * 
+ * This function fetches the README.md file from a specified GitHub repository. It sends a GET request to the GitHub API endpoint for repository contents, including the access token in the Authorization header. If the response contains a content field, it returns the decoded content; otherwise, it returns an empty string.
+ */
+export async function getRepoReadme(username : string , repoName : string , accessToken: string ): Promise<string> {
+	const response = await axios.get(
+		`https://api.github.com/repos/${username}/${repoName}/contents/README.md`,
+		{
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				Accept: "application/vnd.github+json"
+			},
+			validateStatus: (status) => status === 200 || status === 404 
+		},
+		
+	);
+
+	return response.data?.content ? Buffer.from(response.data.content, "base64").toString("utf-8") : "";
+}

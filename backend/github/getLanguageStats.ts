@@ -1,5 +1,6 @@
 import axios from "axios";
 import appError from "../error/appError.js";
+import { getPublicRepos } from "./githubUtils.js";
 
 
 interface LanguagesInterface {
@@ -10,43 +11,7 @@ interface LanguagesInterface {
 
 export {LanguagesInterface};
 
-/** Get Public Repos  */
-async function getPublicRepos(username: string) {
-  const repos = [];
-  let page = 1;
 
-  while (true) {
-    const url = `https://api.github.com/users/${username}/repos?per_page=100&page=${page}`;
-		let data = [];
-
-		try {
-			const response = await axios.get(url, {
-				headers: {
-					Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
-				},
-			});
-
-			data = Array.isArray(response.data) ? response.data : [];
-		} catch (err) {
-			if (axios.isAxiosError(err)) {
-				const status = err.response?.status ?? 500;
-				throw new appError(
-					status,
-					`Failed to fetch repositories for user ${username}`,
-				);
-			}
-
-			throw new appError(500, `Failed to fetch repositories for user ${username}`);
-		}
-
-    if (data.length === 0) break; // no more repos
-
-    repos.push(...data);
-    page++;
-  }
-
-  return repos;
-}
 
 /** Retrieves language statistics for a given GitHub username */
 async function getLanguageStats(username : string) : Promise<LanguagesInterface> {
