@@ -15,6 +15,11 @@ interface IUserGithubData {
 	} | null;
 }
 
+interface IUserPortfolioData {
+	introduction: string | null;
+	techStack: string | null;
+};
+
 export interface IUser extends Document {
 	login: string;
 	githubId: string;
@@ -22,6 +27,7 @@ export interface IUser extends Document {
 	perms: "normal" | "elevated";
 	accessToken: string;
 	userGithubData: IUserGithubData;
+	userPortfolioData: IUserPortfolioData;
 }
 
 interface IUserModel extends Model<IUser> {
@@ -80,6 +86,17 @@ const userSchema: Schema<IUser> = new Schema({
 			},
 		},
 	},
+	userPortfolioData: {
+		introduction: {
+			type: String,
+			default: "",
+		},
+		techStack : {
+			type : String,
+			default : "",
+		}
+
+	}
 });
 
 userSchema.statics.findByGithubId = function (githubId: string) {

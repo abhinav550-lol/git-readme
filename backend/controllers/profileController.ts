@@ -12,19 +12,27 @@ import { redisClient } from "../cache/redisConnect.js";
 import User, { IUser } from "../models/UserModel.js";
 import { getGithubIdByUsername } from "../utils/githubUtils.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
+import { sendPrompt } from "../ai/generateResponse.js";
+import { systemPrompts, userPrompts } from "../ai/prompts.js";
 interface ProfileController {
 	generateProfile: RequestHandler;
 	getContributionStats: RequestHandler;
 	getContributionCard: RequestHandler;
 	getLanguageStats: RequestHandler;
 	getLanguageCard: RequestHandler;
+	generateIntroduction: RequestHandler;
+	generateTechStack : RequestHandler;
+	getUserLanguages : RequestHandler;
 }
 
 const profileController: ProfileController = {
 	/**
 	 * Generates a profile README payload for the authenticated user.
+	 * 
 	 */
-	generateProfile: wrapAsyncErrors(async (req, res, next) => { }),
+	generateProfile: wrapAsyncErrors(async (req, res, next) => {
+		
+	}),
 
 	/**
 	 * Fetches raw contribution statistics for a GitHub username.
@@ -243,6 +251,100 @@ const profileController: ProfileController = {
 			return next(new appError(500, "Internal Server Error"));
 		}
 	}),
+	/**
+	 * Takes general information about user and generates a brief introduction paragraph for the user, which can be used in the profile README.
+	 */
+	generateIntroduction : wrapAsyncErrors(async (req, res, next) => {
+		const {info , temperature} = req.body as {info?: string , temperature?: number};
+
+		const githubId = req.session?.githubId;
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		if (typeof info !== "string" || info.trim() === "") {
+			return next(new appError(400, "Valid information is required in the request body"));
+		}
+
+		if(typeof temperature !== "number" || temperature < 0 || temperature > 1) {
+			return next(new appError(400, "Temperature should be a number between 0 and 1"));
+		}
+		
+		const infoResponse : string = await sendPrompt(systemPrompts["introduction"], userPrompts.generateIntroduction(info) , {temperature: temperature || 0.5 , maxTokens: 200}); 
+		
+		const user = await User.findByGithubId(githubId);
+		if (!user) {
+			return next(new appError(404, "User not found"));
+		}
+
+		user.userPortfolioData.introduction = infoResponse;
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message : "Introduction generated successfully",
+			introduction: infoResponse,
+			error: null
+		});
+	}),
+	/**
+	 * Fetches the user's languages saved in DB, which can be used to show on profile README and also to generate a tech stack section for the profile README.
+	 */
+	getUserLanguages : wrapAsyncErrors(async (req, res, next) => {
+		const githubId = req.session?.githubId;
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		const user = await User.findByGithubId(githubId);
+		if (!user) {
+			return next(new appError(404, "User not found"));
+		}
+
+		let languages = [] as string[];
+		if(user.userGithubData.languagesStats && user.userGithubData.languagesStats.data?.languages) {
+			languages = Object.keys(user.userGithubData.languagesStats.data.languages);
+		};
+
+		return res.status(200).json({
+			success: true,
+			message: "User languages fetched successfully",
+			languages: languages || []
+		});
+	}),
+	/**
+ 	* Based on user's languages saved in DB
+	* and also dropdown to add more languages and generate a tech stack section for the profile README.
+	*/
+	generateTechStack : wrapAsyncErrors(async (req, res, next) => {
+		const {languages} = req.body as {languages?: string[]};
+
+		const githubId = req.session?.githubId;
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+		
+		if (!Array.isArray(languages) || languages.some(lang => typeof lang !== "string" || lang.trim() === "")) {
+			return next(new appError(400, "Languages should be an array of non-empty strings"));
+		}
+		
+		const techStackResponse : string = await sendPrompt(systemPrompts["tech_stack"], userPrompts.generateTechStack(languages) , {temperature: 0.5 , maxTokens: 300});
+
+		const user = await User.findByGithubId(githubId);
+		if (!user) {
+			return next(new appError(404, "User not found"));
+		}
+		
+		user.userPortfolioData.techStack = techStackResponse;
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message : "Tech stack generated successfully",
+			techStack: techStackResponse,
+			error: null
+		});
+	})
 
 };
 
