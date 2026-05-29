@@ -18,6 +18,7 @@ interface IUserGithubData {
 interface IUserPortfolioData {
 	introduction: string | null;
 	techStack: string | null;
+	statsSection: string | null;
 };
 
 export interface IUser extends Document {
@@ -94,7 +95,11 @@ const userSchema: Schema<IUser> = new Schema({
 		techStack : {
 			type : String,
 			default : "",
-		}
+		},
+		statsSection : {
+			type : String,
+			default : "", 
+		},
 
 	}
 });

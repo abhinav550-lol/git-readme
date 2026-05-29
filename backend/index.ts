@@ -29,7 +29,8 @@ import "express-session";
 declare module "express-session" {
 	interface SessionData {
 		oauthState?: string;
-		githubId? : string
+		githubId? : string;
+		githubUsername? : string;
 	}
 }
 

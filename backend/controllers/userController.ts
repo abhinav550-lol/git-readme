@@ -109,12 +109,15 @@ const userController: UserController = {
 			const foundUser = await User.findByGithubId(githubUser.id);
 			if (!foundUser) {
 				await User.create({
+					login: githubUser.login,
 					githubId: githubUser.id,
 					accessToken: tokenData.access_token,
 					email: email,
 					perms: tokenData.scope.includes("repo") ? "elevated" : "normal"
 				});
 			} else {
+				foundUser.login = githubUser.login;
+
 				if (foundUser.perms === "normal" && tokenData.scope.includes("repo")) {
 					foundUser.perms = "elevated";
 				}
@@ -126,6 +129,9 @@ const userController: UserController = {
 				foundUser.accessToken = tokenData.access_token;
 				await foundUser.save();
 			}
+
+			req.session.githubId = githubUser.id;
+			req.session.githubUsername = githubUser.login;
 
 			//Worker For Generating application-specific data JSON
 			const languageStatsJobExists = await doesJobExist("get-language-stats", githubUser.login);

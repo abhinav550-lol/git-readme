@@ -4,16 +4,16 @@ import appError from "../error/appError.js";
 import getUserContributions from "../github/getContributionStats.js";
 import { generateContributionStatsCard } from "../github/generateStatsCard.js";
 import { getLanguageStats, LanguagesInterface } from "../github/getLanguageStats.js";
-
-//Interfaces
-import { ContributionsInterface } from "../github/getContributionStats.js";
-import { generateLanguageCard } from "../github/generateLanguageCard.js";
 import { redisClient } from "../cache/redisConnect.js";
-import User, { IUser } from "../models/UserModel.js";
-import { getGithubIdByUsername } from "../utils/githubUtils.js";
+import { generateLanguageCard } from "../github/generateLanguageCard.js";
+import { createContributionStatsLink, createLanguageStatsLink, getGithubIdByUsername } from "../utils/githubUtils.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { sendPrompt } from "../ai/generateResponse.js";
 import { systemPrompts, userPrompts } from "../ai/prompts.js";
+
+//Interfaces
+import { ContributionsInterface } from "../github/getContributionStats.js";
+import User, { IUser } from "../models/UserModel.js";
 interface ProfileController {
 	generateProfile: RequestHandler;
 	getContributionStats: RequestHandler;
@@ -23,6 +23,8 @@ interface ProfileController {
 	generateIntroduction: RequestHandler;
 	generateTechStack : RequestHandler;
 	getUserLanguages : RequestHandler;
+	generateStatsSection : RequestHandler;
+
 }
 
 const profileController: ProfileController = {
@@ -328,7 +330,7 @@ const profileController: ProfileController = {
 			return next(new appError(400, "Languages should be an array of non-empty strings"));
 		}
 		
-		const techStackResponse : string = await sendPrompt(systemPrompts["tech_stack"], userPrompts.generateTechStack(languages) , {temperature: 0.5 , maxTokens: 300});
+		const techStackResponse : string = await sendPrompt(systemPrompts["tech_stack"], userPrompts.generateTechStack(languages) , {temperature: 0.5 , maxTokens: 2000});
 
 		const user = await User.findByGithubId(githubId);
 		if (!user) {
@@ -344,8 +346,51 @@ const profileController: ProfileController = {
 			techStack: techStackResponse,
 			error: null
 		});
-	})
+	}),
+	/**
+	* Choose between classic or modern stats section and theme by user's preference
+	*/
+	generateStatsSection : wrapAsyncErrors(async (req, res, next) => {
+		const {type , theme} = req.query as {type?: string , theme?: string};
+		
+		const githubId = req.session?.githubId;		
+		if(!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
 
+		if(type !== "classic" && type !== "modern") {
+			return next(new appError(400, "Type should be either 'classic' or 'modern'"));
+		}
+
+		if(!theme || theme !== "dark" && theme !== "light") {
+			return next(new appError(400, "Theme should be either 'dark' or 'light'"));
+		}
+
+		const user = await User.findByGithubId(githubId);
+		if(!user) {
+			return next(new appError(404, "User not found"));
+		}
+
+		const username : string = user.login;
+		
+		const contributionStatsLink : string = createContributionStatsLink(type , username, theme);
+		const languageStatsLink : string = createLanguageStatsLink(type , username, theme);
+
+		const statsSectionMarkdown = `## Stats
+		![Contribution Stats](${contributionStatsLink})
+		![Language Stats](${languageStatsLink})
+		`;
+
+		user.userPortfolioData.statsSection = statsSectionMarkdown;
+		await user.save();
+
+		return res.status(200).json({
+			success: true,
+			message : "Stats section generated successfully",
+			statsSection: statsSectionMarkdown,
+			error: null
+		});
+	}),
 };
 
 export default profileController;
