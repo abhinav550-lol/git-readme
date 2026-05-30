@@ -6,7 +6,7 @@ import { generateContributionStatsCard } from "../github/generateStatsCard.js";
 import { getLanguageStats, LanguagesInterface } from "../github/getLanguageStats.js";
 import { redisClient } from "../cache/redisConnect.js";
 import { generateLanguageCard } from "../github/generateLanguageCard.js";
-import { createContributionStatsLink, createLanguageStatsLink, getGithubIdByUsername } from "../utils/githubUtils.js";
+import { createContributionStatsLink, createLanguageStatsLink, getGithubIdByUsername, GithubReadmeSection } from "../github/githubUtils.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { sendPrompt } from "../ai/generateResponse.js";
 import { systemPrompts, userPrompts } from "../ai/prompts.js";
@@ -20,11 +20,12 @@ interface ProfileController {
 	getContributionCard: RequestHandler;
 	getLanguageStats: RequestHandler;
 	getLanguageCard: RequestHandler;
+	
 	generateIntroduction: RequestHandler;
 	generateTechStack : RequestHandler;
 	getUserLanguages : RequestHandler;
 	generateStatsSection : RequestHandler;
-
+	generateRepoSection : RequestHandler;
 }
 
 const profileController: ProfileController = {
@@ -391,6 +392,49 @@ const profileController: ProfileController = {
 			error: null
 		});
 	}),
+	/**
+	 * Generates a repository section for the GitHub profile README based on the user's repositories.
+	 */
+	generateRepoSection : wrapAsyncErrors(async (req, res, next) => {
+		const {repos} = req.body as {repos?: GithubReadmeSection[]};
+
+		const githubId = req.session?.githubId;
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		if(!Array.isArray(repos) || repos.some(repo => typeof repo.repo !== "object" || typeof repo.readmeContent !== "string")) {
+			return next(new appError(400, "Repos should be an array of objects with 'repo' and 'readmeContent' properties"));
+		}
+
+		const user = await User.findByGithubId(githubId);
+		if (!user) {
+			return next(new appError(404, "User not found"));
+		}
+
+		const repoSection : {name : string , description : string , readmeContent : string , html_url : string}[] = []; 
+		for(const repo of repos){
+			repoSection.push({
+				name: repo.repo.name,
+				description: repo.repo.description || "",
+				html_url: repo.repo.html_url,
+				readmeContent: repo.readmeContent
+			});
+		}
+
+		const repoSectionMarkdown = await sendPrompt(systemPrompts["repo"], userPrompts.generateRepo(repoSection), {temperature: 0.5, maxTokens: 2000});
+
+		user.userPortfolioData.repoSection = repoSectionMarkdown;
+		await user.save();
+		
+		return res.status(200).json({
+			success: true,
+			message : "Repo section generated successfully",
+			repoSection: repoSectionMarkdown,
+			error: null
+		});
+	}),
+	
 };
 
 export default profileController;

@@ -19,6 +19,7 @@ interface IUserPortfolioData {
 	introduction: string | null;
 	techStack: string | null;
 	statsSection: string | null;
+	repoSection: string | null;
 };
 
 export interface IUser extends Document {
@@ -100,7 +101,10 @@ const userSchema: Schema<IUser> = new Schema({
 			type : String,
 			default : "", 
 		},
-
+		repoSection : {
+			type : String,
+			default : "",
+		}
 	}
 });
 

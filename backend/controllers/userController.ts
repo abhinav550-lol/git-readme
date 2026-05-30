@@ -15,10 +15,10 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 import User from "../models/UserModel.js";
-import { getGithubEmailByToken, getGithubUserByToken } from "../utils/githubUtils.js";
+import { getGithubEmailByToken, getGithubUserByToken } from "../github/githubUtils.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { decrypt } from "../utils/tokenCrypt.js";
-import { getAllUserRepositories, getRepoReadme } from "../github/githubUtils.js";
+import { getAllUserRepositories, getRepoReadme, GithubRepo } from "../github/githubUtils.js";
 
 interface UserController {
 	authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
@@ -182,7 +182,7 @@ const userController: UserController = {
 
 		const decryptedToken = decrypt(foundUser.accessToken);
 
-		const repos = await getAllUserRepositories(decryptedToken);
+		const repos : GithubRepo[] = await getAllUserRepositories(decryptedToken);
 
 		return res.status(200).json({
 			success: true,
