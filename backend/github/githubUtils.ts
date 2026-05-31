@@ -114,7 +114,15 @@ export async function getAllUserRepositories(accessToken : string) : Promise<Git
 			}
 		);
 
-		return response.data;
+		console.log(response.data)
+
+		const publicRepos = response.data.filter((repo: any) => !repo.private).map((repo: any) => ({
+			
+			name: repo.name,
+			html_url: repo.html_url,
+			description: repo.description
+		}));
+		return publicRepos;
 }
 
 /** 
@@ -138,8 +146,27 @@ export async function getRepoReadme(username : string , repoName : string , acce
 		
 	);
 
-	return response.data?.content ? Buffer.from(response.data.content, "base64").toString("utf-8") : "";
+	const readme = response.data?.content ? Buffer.from(response.data.content, "base64").toString("utf-8") : "";
+	return readme;
 }
+
+export function cleanRepoReadme(readme: string) {
+  return readme
+    // remove images
+    .replace(/!\[.*?\]\(.*?\)/g, "")
+    // remove badges/links-heavy markdown images
+    .replace(/\[!\[.*?\]\(.*?\)\]\(.*?\)/g, "")
+    // remove code blocks
+    .replace(/```[\s\S]*?```/g, "")
+    // remove html tags
+    .replace(/<[^>]*>/g, "")
+    // remove markdown headings symbols
+    .replace(/^#+\s*/gm, "")
+    // remove excessive whitespace
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 
 
 export async function getGithubUserByToken(access_token : string){
@@ -206,14 +233,14 @@ export async function getGithubIdByUsername(username: string): Promise<string | 
 
 
 /** Creates the link for contribution stats card link based on the type and theme
- * Classic - https://github-readme-streak-stats.herokuapp.com/?user=<username>&theme=<github_dark | default>
+ * Classic - https://github-readme-streak-stats.herokuapp.com/?user=abhinav550-lol&theme=dark
  * Mordern - ${process.env.API_BASE_URL}/api/profile/card/contribution-stats?username=<username>&color_scheme=<dark | light>
  */
 export function createContributionStatsLink(type: string, username: string, theme: string) : string {
 	switch(type){
 		case "classic":
-			const adjusted_theme = theme === "dark" ? "github_dark" : "default";
-			return `https://github-readme-streak-stats.herokuapp.com?username=${username}&theme=${adjusted_theme}`;
+			const adjusted_theme = theme === "dark" ? "dark" : "default";
+			return `https://github-readme-streak-stats.herokuapp.com?user=${username}&theme=${adjusted_theme}`;
 		case "modern":
 			return `${process.env.API_BASE_URL}/api/profile/card/contribution-stats?username=${username}&color_scheme=${theme}`;
 		default:
