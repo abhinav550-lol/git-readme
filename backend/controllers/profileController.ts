@@ -270,6 +270,10 @@ const profileController: ProfileController = {
 			return next(new appError(400, "Valid information is required in the request body"));
 		}
 
+		if(info.length < 20){
+			return next(new appError(400, "Information provided is too short, please provide more details (at least 20 characters)"));
+		}
+
 		if(typeof temperature !== "number" || temperature < 0 || temperature > 1) {
 			return next(new appError(400, "Temperature should be a number between 0 and 1"));
 		}

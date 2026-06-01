@@ -4,7 +4,7 @@ dotenv.config();
 import { Worker } from "bullmq";
 import mongoose from "mongoose";
 
-import { connection } from "./queueRedisConnect.js";
+import { connection } from "queueRedisConnect.js";
 import {
 	getLanguageStats,
 	LanguagesInterface,

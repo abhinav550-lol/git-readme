@@ -14,6 +14,6 @@
   "ts-node": {
     "esm": true
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "queue/queueRedisConnect.ts"],
   "exclude": ["node_modules", "dist"]
 }
