@@ -1,8 +1,7 @@
 import * as cheerio from "cheerio";
 import appError from "../error/appError.js";
-import {redisClient as client, connectRedis } from "../cache/redisConnect.js";
 import axios from "axios";
-import { getUserCreationDate } from "./githubUtils.js";
+import { getUserCreationDate } from "./utils/user.js";
 
 //Interface for contribution data
 interface ContributionsInterface {

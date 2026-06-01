@@ -54,6 +54,7 @@ app.use(
 
 import userRoutes from './routes/userRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
+import appRoutes from './routes/appRoutes.js'
 import errorMiddleware from "./error/errorMiddleware.js";
 
 app.get('/health', (req: Request, res: Response) => {
@@ -66,6 +67,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.use("/api/user", userRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/app" , appRoutes)
 
 
 app.use(errorMiddleware);

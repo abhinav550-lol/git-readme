@@ -1,9 +1,9 @@
-import { LanguageStats } from "./getLanguageStats.js";
+import { LanguagesInterface } from "./getLanguageStats.js";
 
 
 /** Generates an SVG card displaying language statistics  
 */
-export function generateLanguageCard(languageStats: LanguageStats, color_scheme?: string): string {
+export function generateLanguageCard(languageStats: LanguagesInterface, color_scheme?: string): string {
     const isDark = color_scheme !== 'light';
 
     const bg           = isDark ? '#1e293b' : '#f8fafc';

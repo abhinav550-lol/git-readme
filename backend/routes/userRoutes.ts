@@ -9,7 +9,9 @@ router.get("/auth/github", userController.authorizeGithub);
 router.get("/auth/github/callback", userController.callbackGithub);
 router.get("/auth/github/logout", isLoggedIn , userController.logoutGithub);
 
+//User Repos
 router.get("/repos", isLoggedIn, userController.getUserRepos);
 router.get("/repos/:repoName/readme", isLoggedIn, userController.getRepoReadme);
+router.get("/user-languages", isLoggedIn, userController.getUserLanguages);
 
 export default router;

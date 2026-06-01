@@ -14,11 +14,11 @@ import crypto from "crypto";
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
-import User from "../models/UserModel.js";
-import { cleanRepoReadme, getGithubEmailByToken, getGithubUserByToken } from "../github/githubUtils.js";
+import User from "../models/userModel.js";
+import { getGithubEmailByToken, getGithubUserByToken } from "../github/utils/user.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { decrypt } from "../utils/tokenCrypt.js";
-import { getAllUserRepositories, getRepoReadme, GithubRepo } from "../github/githubUtils.js";
+import { getAllUserRepositories, getRepoReadme, GithubRepo } from "../github/utils/repo.js";
 
 interface UserController {
 	authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
@@ -26,6 +26,7 @@ interface UserController {
 	logoutGithub: RequestHandler //destroys session and clears cookie
 	getUserRepos: RequestHandler;
 	getRepoReadme: RequestHandler;
+	getUserLanguages : RequestHandler;
 }
 
 const userController: UserController = {
@@ -224,6 +225,31 @@ const userController: UserController = {
 			message: "Fetched repository README successfully",
 			error: null,
 			readme: readmeContent
+		});
+	}),
+		/**
+	 * Fetches the user's languages saved in DB, which can be used to show on profile README and also to generate a tech stack section for the profile README.
+	 */
+	getUserLanguages : wrapAsyncErrors(async (req, res, next) => {
+		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		const user = await User.findByGithubId(githubId);
+		if (!user) {
+			return next(new appError(404, "User not found"));
+		}
+
+		let languages = [] as string[];
+		if(user.userGithubData.languagesStats && user.userGithubData.languagesStats.data?.languages) {
+			languages = Object.keys(user.userGithubData.languagesStats.data.languages);
+		};
+
+		return res.status(200).json({
+			success: true,
+			message: "User languages fetched successfully",
+			languages: languages || []
 		});
 	}),
 };

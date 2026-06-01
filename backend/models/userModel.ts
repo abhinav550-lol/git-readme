@@ -16,11 +16,11 @@ interface IUserGithubData {
 }
 
 interface IUserPortfolioData {
-	introduction: string | null;
-	techStack: string | null;
-	statsSection: string | null;
-	repoSection: string | null;
-	socialSection: string | null;
+	introduction: string;
+	techStack: string ;
+	statsSection: string ;
+	repoSection: string ;
+	socialSection: string ;
 };
 
 export interface IUser extends Document {

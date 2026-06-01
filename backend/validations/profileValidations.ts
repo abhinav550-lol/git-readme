@@ -7,6 +7,7 @@ interface ProfileValidations {
 	statsSchema: RequestValidationSchema;
 	reposSchema: RequestValidationSchema;
 	socialsSchema: RequestValidationSchema;
+	completeProfileSchema: RequestValidationSchema;
 }
 
 const repoItemSchema = z.object({
@@ -73,5 +74,13 @@ export const profileValidations: ProfileValidations = {
 				.min(1, "At least one social link must be provided"),
 		}),
 	}),
-
+	completeProfileSchema : z.object({
+		body: z.object({
+			introduction : z.boolean(),
+			techstack : z.boolean(),
+			stats : z.boolean(),
+			repos : z.boolean(),
+			socials : z.boolean(),
+		})
+	})
 };

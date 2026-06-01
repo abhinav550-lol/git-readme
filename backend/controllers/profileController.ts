@@ -1,4 +1,4 @@
-import { RequestHandler, urlencoded } from "express";
+import { RequestHandler } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 import getUserContributions from "../github/getContributionStats.js";
@@ -6,38 +6,73 @@ import { generateContributionStatsCard } from "../github/generateStatsCard.js";
 import { getLanguageStats, LanguagesInterface } from "../github/getLanguageStats.js";
 import { redisClient } from "../cache/redisConnect.js";
 import { generateLanguageCard } from "../github/generateLanguageCard.js";
-import { cleanRepoReadme, createContributionStatsLink, createLanguageStatsLink, getGithubIdByUsername, GithubReadmeSection } from "../github/githubUtils.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { sendPrompt } from "../ai/generateResponse.js";
 import { systemPrompts, userPrompts } from "../ai/prompts.js";
 
 //Interfaces
 import { ContributionsInterface } from "../github/getContributionStats.js";
-import User, { IUser } from "../models/UserModel.js";
+import User, { IUser } from "../models/userModel.js";
+import { createContributionStatsLink, createLanguageStatsLink, generateProfileMarkdown } from "../github/utils/application.js";
+import { getGithubIdByUsername } from "../github/utils/user.js";
+import { cleanRepoReadme, GithubReadmeSection } from "../github/utils/repo.js";
+import App, { incrementUserCount } from "../models/appModel.js";
 interface ProfileController {
 	generateProfile: RequestHandler;
 	getContributionStats: RequestHandler;
 	getContributionCard: RequestHandler;
 	getLanguageStats: RequestHandler;
 	getLanguageCard: RequestHandler;
-	getUserLanguages : RequestHandler;
 
 	generateIntroduction: RequestHandler;
 	generateTechStack : RequestHandler;
 	generateStatsSection : RequestHandler;
 	generateRepoSection : RequestHandler;
 	generateSocialsSection : RequestHandler;
+
 }
 
 const profileController: ProfileController = {
 	/**
 	 * Generates a profile README payload for the authenticated user.
-	 * 
+	 * Based on the previous user choices
 	 */
 	generateProfile: wrapAsyncErrors(async (req, res, next) => {
+		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
 		
-	}),
+		const user = await User.findByGithubId(githubId);
+		if(!user) {
+			return next(new appError(404, "User not found"));
+		}
 
+		const { introduction, techstack, stats, repos, socials } = req.body;
+		if(!introduction && !techstack && !stats && !repos && !socials) {
+			return next(new appError(400, "At least one section must be selected to generate the profile"));
+		}
+
+		let profileData = [];
+		if(introduction && user.userPortfolioData.introduction.length) profileData.push({section: "introduction", content: user.userPortfolioData.introduction});
+		if(techstack && user.userPortfolioData.techStack) profileData.push({section: "techstack", content: user.userPortfolioData.techStack});
+		if(stats && user.userPortfolioData.statsSection) profileData.push({section: "stats", content: user.userPortfolioData.statsSection});
+		if(repos && user.userPortfolioData.repoSection) profileData.push({section: "repos", content: user.userPortfolioData.repoSection});
+		if(socials && user.userPortfolioData.socialSection) profileData.push({section: "socials", content: user.userPortfolioData.socialSection});
+
+
+		const profileMarkdown = generateProfileMarkdown(profileData);
+		await incrementUserCount(1440);
+		
+		//Can implement jobs to remove the profile info in future
+		
+		return res.status(200).json({
+			success: true,
+			message : "Profile generated successfully",
+			error : null,
+			data : profileMarkdown
+		});
+	}),
 	/**
 	 * Fetches raw contribution statistics for a GitHub username.
 	 * Expects `username` in the query string and returns JSON data.
@@ -288,37 +323,13 @@ const profileController: ProfileController = {
 
 		user.userPortfolioData.introduction = infoResponse;
 		await user.save();
+ 
 
 		return res.status(200).json({
 			success: true,
 			message : "Introduction generated successfully",
 			introduction: infoResponse,
 			error: null
-		});
-	}),
-	/**
-	 * Fetches the user's languages saved in DB, which can be used to show on profile README and also to generate a tech stack section for the profile README.
-	 */
-	getUserLanguages : wrapAsyncErrors(async (req, res, next) => {
-		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
-		if (!githubId) {
-			return next(new appError(401, "Unauthorized"));
-		}
-
-		const user = await User.findByGithubId(githubId);
-		if (!user) {
-			return next(new appError(404, "User not found"));
-		}
-
-		let languages = [] as string[];
-		if(user.userGithubData.languagesStats && user.userGithubData.languagesStats.data?.languages) {
-			languages = Object.keys(user.userGithubData.languagesStats.data.languages);
-		};
-
-		return res.status(200).json({
-			success: true,
-			message: "User languages fetched successfully",
-			languages: languages || []
 		});
 	}),
 	/**

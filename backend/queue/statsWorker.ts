@@ -4,13 +4,13 @@ dotenv.config();
 import { Worker } from "bullmq";
 import mongoose from "mongoose";
 
-import { connection } from "queueRedisConnect.js";
+import { connection } from "./queueRedisConnect.js";
 import {
 	getLanguageStats,
 	LanguagesInterface,
 } from "../github/getLanguageStats.js";
 import getUserContributions from "../github/getContributionStats.js";
-import User from "../models/UserModel.js";
+import User from "../models/userModel.js";
 import appError from "../error/appError.js";
 import { redisClient } from "../cache/redisConnect.js";
 
@@ -50,7 +50,7 @@ const workerFunctions = {
 
 		user.userGithubData.contributionsStats = {
 			data: contributionsData,
-			updatedAt: Number(new Date()),
+			updatedAt: (new Date()),
 		};
 
 
@@ -84,7 +84,7 @@ const workerFunctions = {
 
 		user.userGithubData.languagesStats = {
 			data: languageStats,
-			updatedAt: Number(new Date()),
+			updatedAt: (new Date()),
 		};
 
 		await user.save();

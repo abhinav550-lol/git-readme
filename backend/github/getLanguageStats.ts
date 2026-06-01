@@ -1,6 +1,6 @@
 import axios from "axios";
 import appError from "../error/appError.js";
-import { getPublicRepos } from "./githubUtils.js";
+import { getPublicRepos } from "./utils/repo.js";
 
 
 interface LanguagesInterface {
