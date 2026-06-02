@@ -26,40 +26,6 @@ const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_MAX_TOKENS = 3000;
 
 
-const README_MARKDOWN_STYLE_GUIDELINES = `
-README Markdown Style Guidelines:
-
-Typography:
-- Use clear and professional GitHub-flavored Markdown.
-- Use short, readable sentences.
-- Use **bold text** only for important skills, technologies, roles, and keywords.
-- Use proper capitalization for technology names, for example JavaScript, TypeScript, React, Node.js, Express.js, MongoDB, Next.js, Python, C++, AI, and Web Development.
-
-Spacing:
-- Add one blank line after each heading.
-- Add one blank line between paragraphs, HTML blocks, images, and badge sections.
-- Never place a Markdown heading immediately after an HTML closing tag.
-- Keep the output clean and easy to scan.
-
-Emojis:
-- Use relevant emojis in headings when appropriate.
-- Use at most one emoji per heading.
-- Do not overuse emojis in paragraphs.
-
-GitHub README Compatibility:
-- Use Markdown/HTML that works well in GitHub README files.
-- Use <p align="center"> or <div align="center"> for centered content.
-- Add alt text for all images.
-- Avoid unsupported custom CSS when the output is meant for GitHub.
-- Do not use script tags, style tags, or unsafe HTML.
-
-Output Rules:
-- Return only the final Markdown/HTML.
-- Do not include explanations, notes, labels, or extra text.
-- Do not wrap the output in code fences.
-- Do not invent missing information.
-- Keep the design polished, modern, and readable.
-`;
 
 const sendPrompt = async (
   systemPrompt: string,
@@ -71,7 +37,7 @@ const sendPrompt = async (
   }
 
   const messages = [
-    { role: "system", content: systemPrompt + "\n\n" + README_MARKDOWN_STYLE_GUIDELINES },
+    { role: "system", content: systemPrompt },
     { role: "user", content: prompt },
   ];
 

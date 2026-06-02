@@ -401,14 +401,14 @@ const profileController: ProfileController = {
 		const languageStatsLink : string = createLanguageStatsLink(type , username, theme);
 
 		const statsSectionMarkdown = [
-		"### 📊 GitHub Stats",
+		"## 📊 GitHub Stats",
 		"",
 		'<div align="center" style="margin: 10px;">',
 		`  <img src="${contributionStatsLink}" alt="Contribution Stats" />`,
 		"</div>",
 		"",
 		'<div align="center" style="margin: 10px;">',
-		`  <img src="${languageStatsLink}" alt="Language Stats" />`,
+		`  <img src="${languageStatsLink}" alt="Language Stats" />`,	
 		"</div>",
 	].join("\n");
 
