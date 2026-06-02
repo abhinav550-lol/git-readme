@@ -21,6 +21,7 @@ interface IUserPortfolioData {
 	statsSection: string ;
 	repoSection: string ;
 	socialSection: string ;
+	lastEdited : Date;
 };
 
 export interface IUser extends Document {
@@ -109,6 +110,10 @@ const userSchema: Schema<IUser> = new Schema({
 		socialSection : {
 			type : String,
 			default : "",
+		}, 
+		lastEdited : {
+			type : Date,
+			default : Date.now(),
 		}
 	}
 });

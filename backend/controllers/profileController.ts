@@ -64,11 +64,10 @@ const profileController: ProfileController = {
 
 		const profileMarkdown : string = `${generateProfileMarkdown(profileData)}`;
 		await incrementUserCount(1440);
+		
+		user.userPortfolioData.lastEdited = new Date();
+		await user.save();
 
-		console.log(profileMarkdown);
-		
-		//Can implement jobs to remove the profile info in future
-		
 		return res.status(200).json({
 			success: true,
 			message : "Profile generated successfully",
@@ -325,6 +324,7 @@ const profileController: ProfileController = {
 		}
 
 		user.userPortfolioData.introduction = infoResponse;
+		user.userPortfolioData.lastEdited = new Date();
 		await user.save();
  
 
@@ -359,6 +359,7 @@ const profileController: ProfileController = {
 		}
 		
 		user.userPortfolioData.techStack = techStackResponse;
+		user.userPortfolioData.lastEdited = new Date();
 		await user.save();
 
 		return res.status(200).json({
@@ -412,6 +413,7 @@ const profileController: ProfileController = {
 	].join("\n");
 
 		user.userPortfolioData.statsSection = statsSectionMarkdown;
+		user.userPortfolioData.lastEdited = new Date();
 		await user.save();
 
 		return res.status(200).json({
@@ -454,6 +456,7 @@ const profileController: ProfileController = {
 		const repoSectionMarkdown = await sendPrompt(systemPrompts["repo"], userPrompts.generateRepo(repoSection), {temperature: 0.5, maxTokens: 2000});
 
 		user.userPortfolioData.repoSection = repoSectionMarkdown;
+		user.userPortfolioData.lastEdited = new Date();
 		await user.save();
 		
 		return res.status(200).json({
@@ -486,6 +489,7 @@ const profileController: ProfileController = {
 		const socialSectionMarkdown = await sendPrompt(systemPrompts["social"], userPrompts.generateSocials(socialLinks), {temperature: 0.5, maxTokens: 1000});
 
 		user.userPortfolioData.socialSection = socialSectionMarkdown;
+		user.userPortfolioData.lastEdited = new Date();
 		await user.save();
 
 		return res.status(200).json({

@@ -50,6 +50,10 @@ app.use(
 	})
 );
 
+//-----------------Jobs-----------------
+import "./jobs/cleanProfileSections.js"
+
+
 // --------------- Routes ---------------
 
 import userRoutes from './routes/userRoutes.js'
