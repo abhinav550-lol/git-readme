@@ -1,6 +1,8 @@
 import { Router } from "express";
 import userController from "../controllers/userController.js";
 import isLoggedIn from "../utils/isLoggedIn.js";
+import { validate } from "../error/validateMiddleware.js";
+import { userValidations } from "../validations/userValidations.js";
 
 const router = Router();
 
@@ -13,5 +15,6 @@ router.get("/auth/github/logout", isLoggedIn , userController.logoutGithub);
 router.get("/repos", isLoggedIn, userController.getUserRepos);
 router.get("/repos/:repoName/readme", isLoggedIn, userController.getRepoReadme);
 router.get("/user-languages", isLoggedIn, userController.getUserLanguages);
+router.put("/profile-repo/readme", isLoggedIn, validate(userValidations.pushReadmeSchema) , userController.pushReadmeToProfileRepo);
 
 export default router;

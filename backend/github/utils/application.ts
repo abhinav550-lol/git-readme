@@ -37,11 +37,29 @@ export function createLanguageStatsLink(type: string, username: string, theme: s
  * @returns A markdown string that combines all the non-empty sections of the profile with horizontal rules as separators. 
  * 
  */
+function parseEscapedMarkdown(markdown: string) {
+  return markdown
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\\t/g, " ")
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+    .trim();
+}
+
 export function generateProfileMarkdown(
   profileData: { section: string; content: string | null }[]
 ) {
   return profileData
-    .filter((sectionData) => sectionData.content !== null && sectionData.content.trim() !== "")
-    .map((sectionData) => sectionData.content!.trim())
-    .join("\n\n---\n\n");
+    .filter(
+      (sectionData) =>
+        typeof sectionData.content === "string" &&
+        sectionData.content.trim() !== ""
+    )
+    .map((sectionData) => parseEscapedMarkdown(sectionData.content!))
+    .join("\n\n---\n\n")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .join("\n")
+    .trim();
 }

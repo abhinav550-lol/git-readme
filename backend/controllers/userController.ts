@@ -18,7 +18,7 @@ import User from "../models/userModel.js";
 import { getGithubEmailByToken, getGithubUserByToken } from "../github/utils/user.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { decrypt } from "../utils/tokenCrypt.js";
-import { getAllUserRepositories, getRepoReadme, GithubRepo } from "../github/utils/repo.js";
+import { checkIfRepoExists, createRepo, getAllUserRepositories, getRepoReadme, GithubRepo, updateRepoReadme } from "../github/utils/repo.js";
 
 interface UserController {
 	authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
@@ -27,6 +27,7 @@ interface UserController {
 	getUserRepos: RequestHandler;
 	getRepoReadme: RequestHandler;
 	getUserLanguages : RequestHandler;
+	pushReadmeToProfileRepo : RequestHandler;
 }
 
 const userController: UserController = {
@@ -252,6 +253,56 @@ const userController: UserController = {
 			languages: languages || []
 		});
 	}),
+	/**
+	 * Core Functionality : Pushes the generated README to the user login(username)'s GitHub repository. Requires elevated permissions.
+	 */
+	pushReadmeToProfileRepo : wrapAsyncErrors(async (req, res, next) => {
+		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		const foundUser = await User.findByGithubId(githubId);
+		if (!foundUser) {
+			return next(new appError(404, "User not found by the GithubID in session"));
+		}
+
+		if (foundUser.perms !== "elevated") {
+			return next(new appError(403, "Please authorize with elevated permissions to access repositories data"));
+		}
+
+		const decryptedToken = decrypt(foundUser.accessToken);
+
+		const repoName = foundUser.login;
+		
+		const repoExists = await checkIfRepoExists(foundUser.login, repoName, decryptedToken);
+
+		if(!repoExists) {
+			const repoCreated = await createRepo(foundUser.login, repoName, decryptedToken);
+
+			if(!repoCreated) {
+				return next(new appError(500, "Failed to create repository"));
+			}
+		}
+
+		const readmeContent = req.body.readmeContent;
+		if (typeof readmeContent !== "string" || readmeContent.trim() === "") {
+			return next(new appError(400, "Invalid README content"));
+		}
+
+		const readmeUpdated = await updateRepoReadme(foundUser.login, repoName, readmeContent, decryptedToken);
+
+		if(!readmeUpdated) {
+			return next(new appError(500, "Failed to update README"));
+		}
+
+		return res.status(200).json({
+			success: true,
+			message: "README.md pushed successfully",
+			error: null,
+			data : null
+		});
+	})
 };
 
 export default userController;

@@ -29,8 +29,9 @@ interface ProfileController {
 	generateStatsSection : RequestHandler;
 	generateRepoSection : RequestHandler;
 	generateSocialsSection : RequestHandler;
-
 }
+
+
 
 const profileController: ProfileController = {
 	/**
@@ -61,8 +62,10 @@ const profileController: ProfileController = {
 		if(socials && user.userPortfolioData.socialSection) profileData.push({section: "socials", content: user.userPortfolioData.socialSection});
 
 
-		const profileMarkdown = generateProfileMarkdown(profileData);
+		const profileMarkdown : string = `${generateProfileMarkdown(profileData)}`;
 		await incrementUserCount(1440);
+
+		console.log(profileMarkdown);
 		
 		//Can implement jobs to remove the profile info in future
 		
