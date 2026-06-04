@@ -22,4 +22,7 @@ router.post("/section/generate-socials", isLoggedIn, validate(profileValidations
 
 //Complete Profile Generation
 router.post("/section/generate-profile", isLoggedIn, validate(profileValidations.completeProfileSchema), profileController.generateProfile);
+
+//Additional Prompt
+router.post("/section/generate-additional", isLoggedIn, validate(profileValidations.additionalPromptSchema), profileController.generateResponseForAdditionalPrompt);
 export default router;

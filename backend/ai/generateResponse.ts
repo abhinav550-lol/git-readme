@@ -22,7 +22,7 @@ interface GroqResponse {
   };
 }
 
-const DEFAULT_TEMPERATURE = 0.2;
+const DEFAULT_TEMPERATURE = 0.8;
 const DEFAULT_MAX_TOKENS = 3000;
 
 

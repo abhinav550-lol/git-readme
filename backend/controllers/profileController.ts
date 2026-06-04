@@ -17,18 +17,24 @@ import { createContributionStatsLink, createLanguageStatsLink, generateProfileMa
 import { getGithubIdByUsername } from "../github/utils/user.js";
 import { cleanRepoReadme, GithubReadmeSection } from "../github/utils/repo.js";
 import App, { incrementUserCount } from "../models/appModel.js";
+import { LLMOptions, LLMs } from "../ai/LLMOptions.js";
 interface ProfileController {
-	generateProfile: RequestHandler;
+	//card and data apis
 	getContributionStats: RequestHandler;
 	getContributionCard: RequestHandler;
 	getLanguageStats: RequestHandler;
 	getLanguageCard: RequestHandler;
-
+	
+	//section creation handlers
 	generateIntroduction: RequestHandler;
 	generateTechStack : RequestHandler;
 	generateStatsSection : RequestHandler;
 	generateRepoSection : RequestHandler;
 	generateSocialsSection : RequestHandler;
+	generateProfile: RequestHandler;
+	
+	//additional user prompting
+	generateResponseForAdditionalPrompt: RequestHandler;
 }
 
 
@@ -499,6 +505,40 @@ const profileController: ProfileController = {
 			error: null
 		});
 	}),
+	/**
+	 * For additional user prompting to generate any custom section or content for the profile README based on user's input and choice of system prompt.
+	 */
+	generateResponseForAdditionalPrompt : wrapAsyncErrors(async (req, res, next) => {
+		const {llmChoice , userPrompt , apiKey } = req.body as {llmChoice? : string , userPrompt?: string , apiKey?: string};
+		
+		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
+
+		if(!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		if(typeof userPrompt !== "string" || userPrompt.trim() === "") {
+			return next(new appError(400, "Valid user prompt is required"));
+		}
+
+		if(typeof apiKey !== "string" || apiKey.trim() === "") {
+			return next(new appError(400, "Valid API key is required"));
+		}
+
+		if(llmChoice !== "gemini" && llmChoice !== "chatgpt") {
+			return next(new appError(400, "LLM choice should be either 'gemini' or 'chatgpt'"));
+		}
+
+		const llmFunction = LLMs[llmChoice as keyof LLMOptions];
+		const response = await llmFunction(apiKey, userPrompt);
+
+		return res.status(200).json({
+			success: true,
+			message : "Response generated successfully",
+			response: response,
+			error: null
+		});
+	})
 };
 
 export default profileController;

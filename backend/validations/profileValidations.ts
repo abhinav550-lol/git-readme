@@ -8,6 +8,7 @@ interface ProfileValidations {
 	reposSchema: RequestValidationSchema;
 	socialsSchema: RequestValidationSchema;
 	completeProfileSchema: RequestValidationSchema;
+	additionalPromptSchema : RequestValidationSchema;
 }
 
 const repoItemSchema = z.object({
@@ -81,6 +82,13 @@ export const profileValidations: ProfileValidations = {
 			stats : z.boolean(),
 			repos : z.boolean(),
 			socials : z.boolean(),
+		})
+	}),
+	additionalPromptSchema : z.object({
+		body : z.object({
+			llmChoice : z.enum(["gemini" , "chatgpt"] , "LLM choice must be either 'Gemini' or 'ChatGPT'"),
+			userPrompt : z.string().min(1 , "Additional prompt cannot be empty"),
+			apiKey : z.string().min(1 , "API key cannot be empty"),
 		})
 	})
 };
