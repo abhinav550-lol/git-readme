@@ -13,6 +13,8 @@ import { useAppDispatch } from './store/hooks'
 import type { Response } from './api/response'
 import Dashboard from './components/Dashboard'
 import ProtectedRoutes from './components/ProtectedRoutes'
+import Landing from './components/Landing'
+import GuestRoutes from './components/GuestRoutes'
 
 
 function App() {
@@ -45,10 +47,21 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
+      <ToastContainer position="top-center" autoClose={3000} hideProgressBar={false} />
       <Routes>
+
+		{/* Public only Auth Routes */}
+		<Route path="/" element={<GuestRoutes />}>
+			<Route path='/' element={<Landing />} />
+		</Route>	
+
+		{/* Normal Auth Routes */}
 		<Route path="/" element={<ProtectedRoutes permsType="normal"/>}>
 			<Route path='dashboard' element={<Dashboard />} />
+		</Route>		
+
+		{/* Elevated Auth Routes */}
+		<Route path="/" element={<ProtectedRoutes permsType="elevated"/>}>
 		</Route>
       </Routes>
     </BrowserRouter>
