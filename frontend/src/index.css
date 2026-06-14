@@ -19,9 +19,9 @@
 	--accent-foreground: #ffffff;
 	--destructive: #e11d48;
 	--destructive-foreground: #ffffff;
-	--border: rgba(255,255,255,0.08);
-	--input: rgba(255,255,255,0.03);
-	--ring: rgba(11,130,255,0.35);
+	--border: rgba(255, 255, 255, 0.08);
+	--input: rgba(255, 255, 255, 0.03);
+	--ring: rgba(11, 130, 255, 0.35);
 	--radius: 0.625rem;
 }
 
@@ -42,9 +42,9 @@
 	--accent-foreground: #ffffff;
 	--destructive: #e11d48;
 	--destructive-foreground: #ffffff;
-	--border: rgba(255,255,255,0.08);
-	--input: rgba(255,255,255,0.03);
-	--ring: rgba(11,130,255,0.35);
+	--border: rgba(255, 255, 255, 0.08);
+	--input: rgba(255, 255, 255, 0.03);
+	--ring: rgba(11, 130, 255, 0.35);
 }
 
 @theme inline {
@@ -80,5 +80,194 @@
 
 	body {
 		@apply bg-background text-foreground;
+		font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 	}
+}
+
+/* ── Landing Page Animations ── */
+
+@keyframes landing-fade-up {
+	from {
+		opacity: 0;
+		transform: translateY(28px);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes landing-fade-in {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes landing-float {
+
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+
+	50% {
+		transform: translateY(-12px);
+	}
+}
+
+@keyframes landing-pulse-ring {
+	0% {
+		transform: scale(1);
+		opacity: 0.4;
+	}
+
+	100% {
+		transform: scale(2.2);
+		opacity: 0;
+	}
+}
+
+@keyframes landing-shimmer {
+	0% {
+		background-position: -200% center;
+	}
+
+	100% {
+		background-position: 200% center;
+	}
+}
+
+@keyframes landing-marquee {
+	0% {
+		transform: translateX(0);
+	}
+
+	100% {
+		transform: translateX(-50%);
+	}
+}
+
+@keyframes landing-grid-fade {
+
+	0%,
+	100% {
+		opacity: 0.03;
+	}
+
+	50% {
+		opacity: 0.07;
+	}
+}
+
+@keyframes landing-line-draw {
+	from {
+		stroke-dashoffset: 1000;
+	}
+
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+@keyframes landing-glow-drift {
+
+	0%,
+	100% {
+		transform: translate(-50%, -50%) scale(1);
+		opacity: 0.12;
+	}
+
+	33% {
+		transform: translate(-40%, -60%) scale(1.15);
+		opacity: 0.18;
+	}
+
+	66% {
+		transform: translate(-60%, -40%) scale(0.9);
+		opacity: 0.1;
+	}
+}
+
+@keyframes landing-typing-cursor {
+
+	0%,
+	100% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0;
+	}
+}
+
+@keyframes landing-code-scroll {
+	0% {
+		transform: translateY(0);
+	}
+
+	100% {
+		transform: translateY(-50%);
+	}
+}
+
+.landing-animate-fade-up {
+	animation: landing-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.landing-animate-float {
+	animation: landing-float 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.landing-animate-shimmer {
+	background-size: 200% 100%;
+	animation: landing-shimmer 3s linear infinite;
+}
+
+.landing-animate-marquee {
+	animation: landing-marquee 30s linear infinite;
+}
+
+.landing-animate-grid-fade {
+	animation: landing-grid-fade 4s ease-in-out infinite;
+}
+
+.landing-animate-glow {
+	animation: landing-glow-drift 8s ease-in-out infinite;
+}
+
+.landing-animate-pulse-ring {
+	animation: landing-pulse-ring 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.landing-animate-code-scroll {
+	animation: landing-code-scroll 20s linear infinite;
+}
+
+.landing-delay-1 {
+	animation-delay: 100ms;
+}
+
+.landing-delay-2 {
+	animation-delay: 200ms;
+}
+
+.landing-delay-3 {
+	animation-delay: 350ms;
+}
+
+.landing-delay-4 {
+	animation-delay: 500ms;
+}
+
+.landing-delay-5 {
+	animation-delay: 650ms;
+}
+
+.landing-delay-6 {
+	animation-delay: 800ms;
 }
