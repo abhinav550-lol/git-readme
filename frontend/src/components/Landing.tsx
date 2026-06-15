@@ -2,15 +2,19 @@
 import { ArrowRight, Sparkles, Users, Palette, BarChart3, Zap, Terminal, RefreshCw, Layers } from 'lucide-react'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import GitHubIcon from '@mui/icons-material/GitHub';
+import Footer from './parts/Footer';
 
 import { Button } from '@/components/ui/button'
 import { queries } from '@/api/appApi'
 import { useAppSelector } from '@/store/hooks';
 import { useNavigate } from 'react-router-dom';
+import { redirectToGithubOAuth } from '@/utils/utils';
 
 
 const transformToKMB = (num: number): string => {
-    if (num < 1000) return num.toString();
+    if (num < 1000) {
+		return Math.floor(num/10).toString() + "0";
+	}
 
     if (num < 1_000_000) {
         return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
@@ -187,7 +191,7 @@ const Landing = () => {
 					</h1>
 
 					{/* Sub copy */}
-					<p className="landing-animate-fade-up landing-delay-2 mt-6 max-w-[48ch] text-base leading-relaxed text-zinc-500 md:text-lg">
+					<p className="landing-animate-fade-up landing-delay-2 mt-6 max-w-[48ch] text-base leading-relaxed text-zinc-500 md:text-xl">
 						Beautiful profile cards, real-time stats, language breakdowns, and contribution visualizations — all generated from your GitHub data.
 					</p>
 
@@ -202,9 +206,9 @@ const Landing = () => {
 							}}
 							onClick={() => {
 								if(authState.isAuthenticated) {
-									window.location.href = '/dashboard'
+									navigate('/dashboard')
 								} else {
-									window.location.href = '/login'
+									redirectToGithubOAuth(false)
 								}
 							}}
 						>
@@ -228,7 +232,7 @@ const Landing = () => {
 					<div className="landing-animate-fade-up landing-delay-4 mt-10 flex items-center gap-6 border-t border-white/6 pt-6">
 						<div className="flex flex-col">
 							<span className="font-mono text-xl font-medium text-white">
-								{isUsersLoading ? '—' : transformToKMB(Number(appUsersData?.data ?? 1000))}
+								{isUsersLoading ? '—' : transformToKMB(Number(appUsersData?.data ?? 1000))}+
 							</span>
 							<span className="text-xs text-zinc-600 uppercase tracking-wider">Profiles built</span>
 						</div>
@@ -328,13 +332,13 @@ const Landing = () => {
 				}`}
 			>
 				<div className="mb-14 max-w-xl">
-					<p className="text-[0.7rem] font-medium uppercase tracking-[0.3em] text-emerald-400">
+					<p className="text-[0.7rem] font-medium md:text-lg uppercase tracking-[0.3em] text-emerald-400">
 						Features
 					</p>
 					<h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
 						Your GitHub data, visualized.
 					</h2>
-					<p className="mt-4 max-w-[55ch] text-base leading-relaxed text-zinc-500">
+					<p className="mt-4 max-w-[55ch] text-base leading-relaxed text-zinc-500 md:text-lg">
 						Sign in with GitHub. We fetch your stats, languages, and contributions — then generate dynamic cards and visualizations you can embed anywhere.
 					</p>
 				</div>
@@ -347,8 +351,8 @@ const Landing = () => {
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
 								<Layers className="h-5 w-5" />
 							</div>
-							<h3 className="text-lg font-medium text-white">Dynamic profile cards</h3>
-							<p className="mt-2 max-w-[50ch] text-sm leading-relaxed text-zinc-500">
+							<h3 className="text-lg md:text-2xl font-medium text-white">Dynamic profile cards</h3>
+							<p className="mt-2 max-w-[50ch] text-sm leading-relaxed text-zinc-500 md:text-lg">
 								Generate beautiful, embeddable profile cards that display your GitHub identity — repos, followers, bio, and more — as polished visuals.
 							</p>
 						</div>
@@ -364,8 +368,8 @@ const Landing = () => {
 						<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400">
 							<BarChart3 className="h-5 w-5" />
 						</div>
-						<h3 className="text-lg font-medium text-white">Real-time GitHub stats</h3>
-						<p className="mt-2 text-sm leading-relaxed text-zinc-500">
+						<h3 className="text-lg md:text-2xl font-medium text-white">Real-time GitHub stats</h3>
+						<p className="mt-2 text-sm leading-relaxed text-zinc-500 md:text-lg">
 							Contributions, streaks, and commit activity — fetched directly from the GitHub API and rendered into stats cards.
 						</p>
 					</div>
@@ -375,8 +379,8 @@ const Landing = () => {
 						<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
 							<Palette className="h-5 w-5" />
 						</div>
-						<h3 className="text-lg font-medium text-white">Language breakdown cards</h3>
-						<p className="mt-2 text-sm leading-relaxed text-zinc-500">
+						<h3 className="text-lg  md:text-2xl font-medium text-white">Language breakdown cards</h3>
+						<p className="mt-2 text-sm leading-relaxed text-zinc-500 md:text-lg">
 							Visualize your top languages with color-coded cards. See exactly what your codebase looks like at a glance.
 						</p>
 					</div>
@@ -386,8 +390,8 @@ const Landing = () => {
 						<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-400">
 							<RefreshCw className="h-5 w-5" />
 						</div>
-						<h3 className="text-lg font-medium text-white">Always up to date</h3>
-						<p className="mt-2 text-sm leading-relaxed text-zinc-500">
+						<h3 className="text-lg md:text-2xl font-medium text-white">Always up to date</h3>
+						<p className="mt-2 text-sm leading-relaxed text-zinc-500 md:text-lg">
 							Async background jobs keep your cards fresh. Your data stays current without lifting a finger.
 						</p>
 					</div>
@@ -398,8 +402,8 @@ const Landing = () => {
 							<div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
 								<Zap className="h-5 w-5" />
 							</div>
-							<h3 className="text-lg font-medium text-white">One-click GitHub auth</h3>
-							<p className="mt-2 max-w-[50ch] text-sm leading-relaxed text-zinc-500">
+							<h3 className="text-lg md:text-2xl font-medium text-white">One-click GitHub auth</h3>
+							<p className="mt-2 max-w-[50ch] text-sm leading-relaxed text-zinc-500 md:text-lg">
 								Sign in with your GitHub account, and your profile cards are generated instantly. Manage sessions, update preferences, and customize your output — all from a single dashboard.
 							</p>
 						</div>
@@ -446,7 +450,7 @@ const Landing = () => {
 								id="community-cta-join"
 								className="mt-6 h-11 rounded-full border border-white/10 bg-white/[0.05] px-6 text-md md:text-xl font-medium text-zinc-300 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-md transition-all duration-300 hover:border-white/15 hover:bg-white/[0.08] hover:text-white active:scale-[0.97]"
 								onClick={() => {
-									window.location.href = '/login'
+									redirectToGithubOAuth(false)
 								}}
 							>
 								Generate yours
@@ -458,23 +462,7 @@ const Landing = () => {
 				</div>
 			</section>
 
-			{/* ── Footer ── */}
-			<footer className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-10 lg:px-12">
-				<div className="flex flex-col items-center justify-between gap-4 border-t border-white/6 pt-6 sm:flex-row">
-					<p className="text-sm text-zinc-600">
-						Built by <span className="text-zinc-400">abhinav550</span>
-					</p>
-					<a
-						href="https://github.com/abhinav550-lol"
-						target="_blank"
-						rel="noreferrer"
-						className="flex items-center gap-1.5 text-sm text-zinc-500 transition-colors duration-200 hover:text-zinc-300"
-					>
-						<GitHubIcon style={{ fontSize: 16 }} />
-						github.com/abhinav550-lol
-					</a>
-				</div>
-			</footer>
+			<Footer />
 		</main>
 	)
 }

@@ -3,8 +3,8 @@ import {authReducers} from './reducers/authReducers.ts'
 
 export interface authState {
 	isAuthenticated : boolean;
-	login : string;
-	githubId : number;
+	login : string; //abhinav550-lol
+	githubId : number; //120103
 	perms : string;
 }
 

@@ -3,17 +3,17 @@ import { axiosGet } from "./axiosMethods";
 import type { Response } from "./response";
 
 const fn = {
-	fetchAppUsers: async () => {
+	logoutUser : async () => {
 		const res = await axiosGet<Response<number>>(`${import.meta.env.VITE_BACKEND_URL}/api/app/user-count`);
 		return res;
 	}
 }
 
 const queries = {
-	useAppUsers: () => {
+	useLogout: () => {
 		return useQuery({
 			queryKey: ['app-users'],
-			queryFn: fn.fetchAppUsers,	
+			queryFn: fn.logoutUser,	
 		})
 	}
 }
