@@ -12,8 +12,6 @@ const ProtectedRoutes = ({
 	const navigate = useNavigate();	
 	
 	useEffect(() => {
-		console.log("ProtectedRoutes.jsx: authState changed: " + JSON.stringify(authState));
-		
 		if(!authState.isAuthenticated){
 			navigate('/')
 		}

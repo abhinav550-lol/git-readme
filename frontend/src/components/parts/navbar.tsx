@@ -22,7 +22,7 @@ const DashboardNavbar = () => {
 	}
 
 	return (
-		<nav className="dashboard-navbar-animate-in fixed top-5 inset-x-0 z-50 mx-auto w-[calc(100%-2.5rem)] max-w-5xl">
+		<nav className="dashboard-navbar-animate-in absolute top-5 inset-x-0 z-50 mx-auto w-[calc(100%-2.5rem)] max-w-5xl">
 			<div
 				className="flex items-center justify-between rounded-2xl border border-white/8 bg-zinc-900/60 px-5 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl"
 				style={{
@@ -49,14 +49,14 @@ const DashboardNavbar = () => {
 					>
 						<FileCode2 className="h-4 w-4 text-zinc-500 transition-colors duration-200 group-hover:text-emerald-400" />
 						<span className="hidden sm:inline">&lt;&gt;</span>
-						<span>Docs</span>
+						<span className="hidden sm:inline">Docs</span>
 					</div>
 
 					{/* Divider */}
 					<div className="mx-1 h-5 w-px bg-white/8 sm:mx-2" />
 
 					{/* User login */}
-					<div className="flex items-center gap-2 rounded-xl px-3 py-2">
+					<div className=" items-center gap-2 rounded-xl px-3 py-2 hidden md:flex">
 						<span className="relative flex h-2 w-2">
 							<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-40"></span>
 							<span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
@@ -67,7 +67,7 @@ const DashboardNavbar = () => {
 					</div>
 
 					{/* Divider */}
-					<div className="mx-1 h-5 w-px bg-white/8 sm:mx-2" />
+					<div className="mx-1 h-5 w-px bg-white/8 sm:mx-2 hidden md:flex" />
 
 					{/* Logout */}
 					<button

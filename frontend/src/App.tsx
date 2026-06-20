@@ -6,15 +6,16 @@ import { useEffect, useState } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 
-import LoadingComponent from './components/Loading'
+import LoadingComponent from './components/loading'
 
 import {setAuth, type authState} from './store/authSlice'
 import { useAppDispatch } from './store/hooks'
 import type { Response } from './api/response'
-import Dashboard from './components/Dashboard'
-import ProtectedRoutes from './components/ProtectedRoutes'
-import Landing from './components/Landing'
-import GuestRoutes from './components/GuestRoutes'
+import Dashboard from './components/dashboard'
+import ProtectedRoutes from './components/protectedRoutes'
+import Landing from './components/landing'
+import GuestRoutes from './components/guestRoutes'
+import { ProfileGeneration } from './components/profileGeneration'
 
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
 
 		{/* Elevated Auth Routes */}
 		<Route path="/" element={<ProtectedRoutes permsType="elevated"/>}>
+			<Route path='/generate-profile' element={<ProfileGeneration />} />
 		</Route>
       </Routes>
     </BrowserRouter>
