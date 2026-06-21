@@ -5,16 +5,16 @@ import { Outlet, useNavigate } from "react-router-dom";
 const GuestRoutes = () => {
 	const authState = useAppSelector((state) => state.auth);
 	const navigate = useNavigate();
-	
+
+	console.log(authState.isAuthenticated);
+
 	useEffect(() => {
-		if(authState.isAuthenticated) {
-			navigate('/dashboard');
+		if (authState.isAuthenticated) {
+			navigate('/dashboard')
 		}
-	} , [authState.isAuthenticated, navigate]);
+	})
 
-	return (
-		!authState.isAuthenticated && <Outlet />
-	)
-}
+	return <Outlet />;
+};
 
-export default GuestRoutes
+export default GuestRoutes;

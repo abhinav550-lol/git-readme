@@ -9,11 +9,9 @@ import Footer from "./parts/footer";
 import {
 	ArrowLeft,
 	ArrowRight,
-	SkipForward,
 	Check,
 	Circle,
 	CircleDot,
-	CircleDashed,
 } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -46,11 +44,11 @@ export function ProfileGeneration() {
 	const [sectionsGenerated, setSectionsGenerated] = useState<
 		Record<SectionKey, boolean>
 	>({
-		introduction: false,
-		techstack: false,
-		stats: false,
-		repos: false,
-		socials: false,
+		introduction: true,
+		techstack: true,
+		stats: true,
+		repos: true,
+		socials: true,
 	});
 
 	/* ── Navigation handlers ── */
@@ -58,7 +56,7 @@ export function ProfileGeneration() {
 	const onBack = () => setSection((prev) => Math.max(prev - 1, 1));
 
 	/* ── Current section data ── */
-	const [currentLabel, currentKey, CurrentComponent] =
+	const [, currentKey, CurrentComponent] =
 		stateToSectionMap[section];
 	const isFirstSection = section === 1;
 	const isLastSection = section === TOTAL_STEPS;

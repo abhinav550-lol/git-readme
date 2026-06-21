@@ -13,3 +13,28 @@ export function appToast(
 
 	return toast[type](message, options)
 }
+
+export function showToast(
+	message: string,
+	type: AppToastType = 'info',
+	options?: ToastOptions,
+) {
+	return appToast(message, type, options)
+}
+
+showToast.error = (message: string, options?: ToastOptions) => {
+	return appToast(message, 'error', options)
+}
+
+showToast.success = (message: string, options?: ToastOptions) => {
+	return appToast(message, 'success', options)
+}
+
+showToast.info = (message: string, options?: ToastOptions) => {
+	return appToast(message, 'info', options)
+}
+
+showToast.warning = (message: string, options?: ToastOptions) => {
+	return appToast(message, 'warning', options)
+}
+
