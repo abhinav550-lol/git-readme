@@ -39,8 +39,6 @@ interface GenerateSocialsResponse extends Response<null> {
   socialSection: string;
 }
 
-
-
 interface GenerateReposPayload {
   repos: {
     repo: {
@@ -55,6 +53,16 @@ interface GenerateReposPayload {
 interface GenerateReposResponse extends Response<null> {
   repoSection: string;
 }
+
+interface GenerateProfilePayload {
+  introduction: boolean;
+  techstack: boolean;
+  stats: boolean;
+  repos: boolean;
+  socials: boolean;
+}
+
+interface GenerateProfileResponse extends Response<string> {}
 
 const fn = {
   generateIntroduction: async (payload: GenerateIntroductionPayload) => {
@@ -86,20 +94,33 @@ const fn = {
   },
 
   generateRepos: async (payload: GenerateReposPayload) => {
-	try{
-		const res = await axiosPost<GenerateReposResponse, GenerateReposPayload>(
-		  `${import.meta.env.VITE_BACKEND_URL}/api/profile/section/generate-repos`,
-		  payload,
-		);
-		return res;
-	}catch(err){
-		console.log("Error in generateRepos", err)
-		return null;
-	}
+    try {
+      const res = await axiosPost<GenerateReposResponse, GenerateReposPayload>(
+        `${import.meta.env.VITE_BACKEND_URL}/api/profile/section/generate-repos`,
+        payload,
+      );
+      return res;
+    } catch (err) {
+      console.log("Error in generateRepos", err);
+      return null;
+    }
   },
   generateSocials: async (payload: GenerateSocialsPayload) => {
-    const res = await axiosPost<GenerateSocialsResponse, GenerateSocialsPayload>(
+    const res = await axiosPost<
+      GenerateSocialsResponse,
+      GenerateSocialsPayload
+    >(
       `${import.meta.env.VITE_BACKEND_URL}/api/profile/section/generate-socials`,
+      payload,
+    );
+    return res;
+  },
+  generateProfile: async (payload: GenerateProfilePayload) => {
+    const res = await axiosPost<
+      GenerateProfileResponse,
+      GenerateProfilePayload
+    >(
+      `${import.meta.env.VITE_BACKEND_URL}/api/profile/section/generate-profile`,
       payload,
     );
     return res;
@@ -135,6 +156,12 @@ const mutations = {
       mutationFn: fn.generateSocials,
     });
   },
+  useGenerateProfile: () => {
+    return useMutation({
+      mutationFn: fn.generateProfile,
+    });
+  },
 };
 
 export { queries, mutations, fn as profileApiFn };
+export type { GenerateProfilePayload };
