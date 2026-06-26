@@ -7,9 +7,11 @@ import { userValidations } from "../validations/userValidations.js";
 const router = Router();
 
 //Auth Routes
+router.get("/auth/me" , isLoggedIn , userController.getCurrentUser);
+
 router.get("/auth/github", userController.authorizeGithub);
 router.get("/auth/github/callback", userController.callbackGithub);
-router.get("/auth/github/logout", isLoggedIn , userController.logoutGithub);
+router.post("/auth/github/logout", isLoggedIn , userController.logoutGithub);
 
 //User Repos
 router.get("/repos", isLoggedIn, userController.getUserRepos);

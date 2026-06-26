@@ -1,4 +1,5 @@
 import MarkdownPreview from "@uiw/react-markdown-preview";
+import rehypeSanitize from "rehype-sanitize";
 import { Copy, Check, FileText } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ export function MarkdownPreviewer({ markdown }: MarkdownPreviewerProps) {
 			<div className="p-6 overflow-x-auto" data-color-mode="dark">
 				<MarkdownPreview
 					source={markdown}
+					rehypePlugins={[rehypeSanitize]}
 					style={{
 						backgroundColor: "transparent",
 						fontFamily: "inherit",

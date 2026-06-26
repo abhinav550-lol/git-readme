@@ -17,6 +17,7 @@ import {
 import { MarkdownPreviewer } from "./markdownPreviewer";
 import { showToast } from "@/utils/toast";
 import MarkdownPreview from "@uiw/react-markdown-preview";
+import rehypeSanitize from "rehype-sanitize";
 
 export function projectsSection({
 	onGeneratedChange,
@@ -609,6 +610,7 @@ export function projectsSection({
 									{readmeContent.trim() ? (
 										<MarkdownPreview
 											source={readmeContent}
+											rehypePlugins={[rehypeSanitize]}
 											style={{
 												backgroundColor: "transparent",
 												fontFamily: "inherit",

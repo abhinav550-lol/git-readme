@@ -77,7 +77,6 @@ export async function getAllUserRepositories(accessToken: string): Promise<Githu
 		}
 	);
 
-	console.log(response.data)
 
 	const publicRepos = response.data.filter((repo: any) => !repo.private).map((repo: any) => ({
 

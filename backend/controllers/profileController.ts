@@ -440,15 +440,17 @@ const profileController: ProfileController = {
 			return next(new appError(401, "Unauthorized"));
 		}
 
+		console.log(1)
 		if(!Array.isArray(repos) || repos.some(repo => typeof repo.repo !== "object" || typeof repo.readmeContent !== "string")) {
 			return next(new appError(400, "Repos should be an array of objects with 'repo' and 'readmeContent' properties"));
 		}
-
+		
 		const user = await User.findByGithubId(githubId);
 		if (!user) {
 			return next(new appError(404, "User not found"));
 		}
-
+		
+		console.log(2)
 		const repoSection : {name : string , description : string , readmeContent : string , html_url : string}[] = []; 
 		for(const repo of repos){
 			repoSection.push({
@@ -458,13 +460,14 @@ const profileController: ProfileController = {
 				readmeContent: cleanRepoReadme(repo.readmeContent).slice(0, 1000) 
 			});
 		}
-
+		
 		const repoSectionMarkdown = await sendPrompt(systemPrompts["repo"], userPrompts.generateRepo(repoSection), {temperature: 0.5, maxTokens: 2000});
-
+		
 		user.userPortfolioData.repoSection = repoSectionMarkdown;
 		user.userPortfolioData.lastEdited = new Date();
 		await user.save();
 		
+		console.log(3)
 		return res.status(200).json({
 			success: true,
 			message : "Repo section generated successfully",

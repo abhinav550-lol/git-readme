@@ -15,85 +15,141 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
 import wrapAsyncErrors from "../error/wrapAsyncErrors.js";
 import appError from "../error/appError.js";
 import User from "../models/userModel.js";
-import { getGithubEmailByToken, getGithubUserByToken } from "../github/utils/user.js";
+import {
+	getGithubEmailByToken,
+	getGithubUserByToken,
+} from "../github/utils/user.js";
 import { addJobs, doesJobExist } from "../queue/statsQueue.js";
 import { decrypt } from "../utils/tokenCrypt.js";
-import { checkIfRepoExists, createRepo, getAllUserRepositories, getRepoReadme, GithubRepo, updateRepoReadme } from "../github/utils/repo.js";
+import {
+	checkIfRepoExists,
+	createRepo,
+	getAllUserRepositories,
+	getRepoReadme,
+	GithubRepo,
+	updateRepoReadme,
+} from "../github/utils/repo.js";
 
 interface UserController {
+	getCurrentUser: RequestHandler;
 	authorizeGithub: RequestHandler; //perms params as elevated scopes , elevated_perms == true in query
 	callbackGithub: RequestHandler;
-	logoutGithub: RequestHandler //destroys session and clears cookie
+	logoutGithub: RequestHandler; //destroys session and clears cookie
 	getUserRepos: RequestHandler;
 	getRepoReadme: RequestHandler;
-	getUserLanguages : RequestHandler;
-	pushReadmeToProfileRepo : RequestHandler;
+	getUserLanguages: RequestHandler;
+	pushReadmeToProfileRepo: RequestHandler;
 }
 
 const userController: UserController = {
 	/**
+	 * Returns the currently authenticated user's information based on the session data. Requires the user to be logged in.
+	 */
+	getCurrentUser: wrapAsyncErrors(async (req, res, next) => {
+		console.log("Session Data:", req.session.githubId); // Debugging line to check session data
+
+		const githubId =
+			req.session?.githubId ||
+			(process.env.NODE_ENV === "test" ? "194940960" : null);
+		if (!githubId) {
+			return next(new appError(401, "Unauthorized"));
+		}
+
+		const foundUser = await User.findByGithubId(githubId);
+		if (!foundUser) {
+			return next(
+				new appError(404, "User not found by the GithubID in session"),
+			);
+		}
+
+		return res.status(200).json({
+			success: true,
+			message: "Fetched current user successfully",
+			error: null,
+			data: {
+				isAuthenticated: true,
+				login: foundUser.login,
+				githubId: foundUser.githubId,
+				perms: foundUser.perms,
+			},
+		});
+	}),
+	/**
 	 * Initiates GitHub OAuth flow by redirecting to GitHub's authorization URL.
 	 * Accepts an optional query parameter `elevated_perms` to request additional scopes.
 	 */
-	authorizeGithub: wrapAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-		const baseAuthUrl = "https://github.com/login/oauth/authorize";
+	authorizeGithub: wrapAsyncErrors(
+		async (req: Request, res: Response, next: NextFunction) => {
+			const baseAuthUrl = "https://github.com/login/oauth/authorize";
 
+			const state = crypto.randomBytes(16).toString("hex");
 
-		const state = crypto.randomBytes(16).toString("hex");
+			const { elevated_perms } = req.query;
+			const perms =
+				elevated_perms === "true"
+					? "read:user user:email repo"
+					: "read:user user:email";
 
-		const { elevated_perms } = req.query;
-		const perms = elevated_perms === "true" ? "read:user user:email repo" : "read:user user:email";
+			const params = new URLSearchParams({
+				client_id: process.env.GITHUB_CLIENT_ID!,
+				redirect_uri: `${process.env.GITHUB_REDIRECT_URI!}`,
+				scope: perms,
+				state: state,
+			});
 
-		const params = new URLSearchParams({
-			client_id: process.env.GITHUB_CLIENT_ID!,
-			redirect_uri: `${process.env.GITHUB_REDIRECT_URI!}`,
-			scope: perms,
-			state: state
-		});
+			req.session.oauthState = state;
 
-		req.session.oauthState = state;
-
-		const authUrl = `${baseAuthUrl}?${params.toString()}`;
-		res.redirect(authUrl);
-	}),
+			const authUrl = `${baseAuthUrl}?${params.toString()}`;
+			res.redirect(authUrl);
+		},
+	),
 	/**
- * Github OAuth callback handler that processes the authorization code, exchanges it for an access token, and retrieves user information.
- * Expects `code` and `state` as query parameters from GitHub's redirect.
- * Validates the `state` parameter to prevent CSRF attacks.
- */
+	 * Github OAuth callback handler that processes the authorization code, exchanges it for an access token, and retrieves user information.
+	 * Expects `code` and `state` as query parameters from GitHub's redirect.
+	 * Validates the `state` parameter to prevent CSRF attacks.
+	 */
 	callbackGithub: wrapAsyncErrors(
 		async (req: Request, res: Response, next: NextFunction) => {
-			const { code, state } = req.query;
+			const { code, state , error } = req.query;
+			
+			if (error) {
+				req.session.destroy(() => {});
+				return res.redirect(process.env.FRONTEND_URL!);
+			}
 
 			if (!state || state !== req.session.oauthState) {
-				return new appError(400, "Invalid State Parameter");
+				return next(new appError(400, "Invalid State Parameter"));
 			}
 
 			if (!code) {
 				return new appError(400, "Authorization code not found");
 			}
+			
 
-			const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"Accept": "application/json"
+			const tokenResponse = await fetch(
+				"https://github.com/login/oauth/access_token",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Accept: "application/json",
+					},
+					body: JSON.stringify({
+						client_id: process.env.GITHUB_CLIENT_ID,
+						client_secret: process.env.GITHUB_CLIENT_SECRET,
+						code,
+						redirect_uri: `${process.env.GITHUB_REDIRECT_URI!}`,
+						state,
+					}),
 				},
-				body: JSON.stringify({
-					client_id: process.env.GITHUB_CLIENT_ID,
-					client_secret: process.env.GITHUB_CLIENT_SECRET,
-					code,
-					redirect_uri: `${process.env.GITHUB_REDIRECT_URI!}`,
-					state
-				})
-			})
-
+			);
 
 			const tokenData = await tokenResponse.json();
 
-
 			if (!tokenData?.access_token) {
-				return next(new appError(400, "Failed to get access token from GitHub"));
+				return next(
+					new appError(400, "Failed to get access token from GitHub"),
+				);
 			}
 
 			if (!tokenData?.scope) {
@@ -106,7 +162,9 @@ const userController: UserController = {
 				return next(new appError(400, "Failed to fetch user data from GitHub"));
 			}
 
-			const email: string = githubUser?.email ? githubUser.email : (await getGithubEmailByToken(tokenData.access_token));
+			const email: string = githubUser?.email
+				? githubUser.email
+				: await getGithubEmailByToken(tokenData.access_token);
 
 			const foundUser = await User.findByGithubId(githubUser.id);
 			if (!foundUser) {
@@ -115,7 +173,7 @@ const userController: UserController = {
 					githubId: githubUser.id,
 					accessToken: tokenData.access_token,
 					email: email,
-					perms: tokenData.scope.includes("repo") ? "elevated" : "normal"
+					perms: tokenData.scope.includes("repo") ? "elevated" : "normal",
 				});
 			} else {
 				foundUser.login = githubUser.login;
@@ -124,7 +182,10 @@ const userController: UserController = {
 					foundUser.perms = "elevated";
 				}
 
-				if (foundUser.perms === "elevated" && !tokenData.scope.includes("repo")) {
+				if (
+					foundUser.perms === "elevated" &&
+					!tokenData.scope.includes("repo")
+				) {
 					foundUser.perms = "normal";
 				}
 
@@ -134,105 +195,166 @@ const userController: UserController = {
 
 			req.session.githubId = githubUser.id;
 			req.session.githubUsername = githubUser.login;
+			req.session.save(async (err) => {
+				if (err) {
+					return next(new appError(500, "Failed to save session"));
+				}
 
-			//Worker For Generating application-specific data JSON
-			const languageStatsJobExists = await doesJobExist("get-language-stats", githubUser.login);
-			const contributionStatsJobExists = await doesJobExist("get-contribution-stats", githubUser.login);
+				// Worker For Generating application-specific data JSON
+				const languageStatsJobExists = await doesJobExist(
+					"get-language-stats",
+					githubUser.login,
+				);
+				const contributionStatsJobExists = await doesJobExist(
+					"get-contribution-stats",
+					githubUser.login,
+				);
 
-			if (!languageStatsJobExists) {
-				await addJobs("get-language-stats", githubUser.login, githubUser.id);
-			}
+				if (!languageStatsJobExists) {
+					await addJobs("get-language-stats", githubUser.login, githubUser.id);
+				}
 
-			if (!contributionStatsJobExists) {
-				await addJobs("get-contribution-stats", githubUser.login, githubUser.id);
-			}
+				if (!contributionStatsJobExists) {
+					await addJobs(
+						"get-contribution-stats",
+						githubUser.login,
+						githubUser.id,
+					);
+				}
 
-			return res.redirect(process.env.FRONTEND_URL!);
+				return res.redirect(process.env.FRONTEND_URL!);
+			});
 		},
 	),
 	/**
- * Logs out the user by destroying the session and clearing the authentication cookie.
- * Redirects to the frontend URL after logout.
- * Accepts an optional query parameter `elevated_perms` to request additional scopes.
- */
+	 * Logs out the user by destroying the session and clearing the authentication cookie.
+	 * Redirects to the frontend URL after logout.
+	 * Accepts an optional query parameter `elevated_perms` to request additional scopes.
+	 */
 	logoutGithub: wrapAsyncErrors(
 		async (req: Request, res: Response, next: NextFunction) => {
 			req.session.destroy((err) => {
 				if (err) return next(new appError(500, "Logout failed"));
-				res.clearCookie("connect.sid");
-				res.redirect(process.env.FRONTEND_URL!);
 			});
+
+			const isProduction = process.env.NODE_ENV === "production";
+
+			res.clearCookie("connect.sid", {
+				path: "/",
+				sameSite: isProduction ? "none" : "lax",
+				httpOnly: true,
+				secure: isProduction,
+			});
+
+			return res.status(200).json({
+				success: true,
+				message: "Logged out successfully",
+				error: null,
+				data : null
+			})
 		},
 	),
 	/**
 	 * Gets the authenticated user's GitHub repositories using the stored access token.
 	 */
-	getUserRepos: wrapAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
-		if (!githubId) {
-			return next(new appError(401, "Unauthorized"));
-		}
+	getUserRepos: wrapAsyncErrors(
+		async (req: Request, res: Response, next: NextFunction) => {
+			const githubId =
+				req.session?.githubId ||
+				(process.env.NODE_ENV === "test" ? "194940960" : null);
+			if (!githubId) {
+				return next(new appError(401, "Unauthorized"));
+			}
 
-		const foundUser = await User.findByGithubId(githubId);
-		if (!foundUser) {
-			return next(new appError(404, "User not found by the GithubID in session"));
-		}
+			console.log(1, req.session.githubId); // Debugging line to check session data
+			const foundUser = await User.findByGithubId(githubId);
+			if (!foundUser) {
+				return next(
+					new appError(404, "User not found by the GithubID in session"),
+				);
+			}
 
-		if (foundUser.perms !== "elevated") {
-			return next(new appError(403, "Please authorize with elevated permissions to access repositories data"));
-		}
+			if (foundUser.perms !== "elevated") {
+				return next(
+					new appError(
+						403,
+						"Please authorize with elevated permissions to access repositories data",
+					),
+				);
+			}
 
-		const decryptedToken = decrypt(foundUser.accessToken);
+			const decryptedToken = decrypt(foundUser.accessToken);
 
-		const repos : GithubRepo[] = await getAllUserRepositories(decryptedToken);
+			console.log("Decrypted Token:", decryptedToken); // Debugging line to check the decrypted token
 
-		return res.status(200).json({
-			success: true,
-			message: "Fetched user repositories successfully",
-			error: null,
-			repositories: repos
-		});
-	}),
+			const repos: GithubRepo[] = await getAllUserRepositories(decryptedToken);
+
+			console.log(repos)
+			return res.status(200).json({
+				success: true,
+				message: "Fetched user repositories successfully",
+				error: null,
+				repositories: repos,
+			});
+		},
+	),
 	/**
 	 * Requires repoName as a URL parameter and returns the README content of that repository for the authenticated user.
 	 * Gets the README content for a specific repository.
 	 */
-	getRepoReadme: wrapAsyncErrors(async (req: Request, res: Response, next: NextFunction) => {
-		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
-		if (!githubId) {
-			return next(new appError(401, "Unauthorized"));
-		}
+	getRepoReadme: wrapAsyncErrors(
+		async (req: Request, res: Response, next: NextFunction) => {
+			const githubId =
+				req.session?.githubId ||
+				(process.env.NODE_ENV === "test" ? "194940960" : null);
+			if (!githubId) {
+				return next(new appError(401, "Unauthorized"));
+			}
 
-		const foundUser = await User.findByGithubId(githubId);
-		if (!foundUser) {
-			return next(new appError(404, "User not found by the GithubID in session"));
-		}
+			const foundUser = await User.findByGithubId(githubId);
+			if (!foundUser) {
+				return next(
+					new appError(404, "User not found by the GithubID in session"),
+				);
+			}
 
-		if (foundUser.perms !== "elevated") {
-			return next(new appError(403, "Please authorize with elevated permissions to access repositories data"));
-		}
+			if (foundUser.perms !== "elevated") {
+				return next(
+					new appError(
+						403,
+						"Please authorize with elevated permissions to access repositories data",
+					),
+				);
+			}
 
-		const decryptedToken = decrypt(foundUser.accessToken);
+			const decryptedToken = decrypt(foundUser.accessToken);
 
-		const repoName = req.params.repoName;
-		if (typeof repoName !== "string" || repoName.trim() === "") {
-			return next(new appError(400, "Invalid repository name"));
-		}
+			const repoName = req.params.repoName;
+			if (typeof repoName !== "string" || repoName.trim() === "") {
+				return next(new appError(400, "Invalid repository name"));
+			}
 
-		const readmeContent = await getRepoReadme(foundUser.login, repoName, decryptedToken);
+			const readmeContent = await getRepoReadme(
+				foundUser.login,
+				repoName,
+				decryptedToken,
+			);
 
-		return res.status(200).json({
-			success: true,
-			message: "Fetched repository README successfully",
-			error: null,
-			readme: readmeContent
-		});
-	}),
-		/**
+			return res.status(200).json({
+				success: true,
+				message: "Fetched repository README successfully",
+				error: null,
+				readme: readmeContent,
+			});
+		},
+	),
+	/**
 	 * Fetches the user's languages saved in DB, which can be used to show on profile README and also to generate a tech stack section for the profile README.
 	 */
-	getUserLanguages : wrapAsyncErrors(async (req, res, next) => {
-		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
+	getUserLanguages: wrapAsyncErrors(async (req, res, next) => {
+		const githubId =
+			req.session?.githubId ||
+			(process.env.NODE_ENV === "test" ? "194940960" : null);
 		if (!githubId) {
 			return next(new appError(401, "Unauthorized"));
 		}
@@ -243,44 +365,66 @@ const userController: UserController = {
 		}
 
 		let languages = [] as string[];
-		if(user.userGithubData.languagesStats && user.userGithubData.languagesStats.data?.languages) {
-			languages = Object.keys(user.userGithubData.languagesStats.data.languages);
-		};
+		if (
+			user.userGithubData.languagesStats &&
+			user.userGithubData.languagesStats.data?.languages
+		) {
+			languages = Object.keys(
+				user.userGithubData.languagesStats.data.languages,
+			);
+		}
 
 		return res.status(200).json({
 			success: true,
 			message: "User languages fetched successfully",
-			languages: languages || []
+			languages: languages || [],
 		});
 	}),
 	/**
 	 * Core Functionality : Pushes the generated README to the user login(username)'s GitHub repository. Requires elevated permissions.
 	 */
-	pushReadmeToProfileRepo : wrapAsyncErrors(async (req, res, next) => {
-		const githubId = req.session?.githubId || (process.env.NODE_ENV === "test" ? "194940960" : null);
+	pushReadmeToProfileRepo: wrapAsyncErrors(async (req, res, next) => {
+		const githubId =
+			req.session?.githubId ||
+			(process.env.NODE_ENV === "test" ? "194940960" : null);
 		if (!githubId) {
 			return next(new appError(401, "Unauthorized"));
 		}
 
 		const foundUser = await User.findByGithubId(githubId);
 		if (!foundUser) {
-			return next(new appError(404, "User not found by the GithubID in session"));
+			return next(
+				new appError(404, "User not found by the GithubID in session"),
+			);
 		}
 
 		if (foundUser.perms !== "elevated") {
-			return next(new appError(403, "Please authorize with elevated permissions to access repositories data"));
+			return next(
+				new appError(
+					403,
+					"Please authorize with elevated permissions to access repositories data",
+				),
+			);
 		}
 
 		const decryptedToken = decrypt(foundUser.accessToken);
 
 		const repoName = foundUser.login;
-		
-		const repoExists = await checkIfRepoExists(foundUser.login, repoName, decryptedToken);
 
-		if(!repoExists) {
-			const repoCreated = await createRepo(foundUser.login, repoName, decryptedToken);
+		const repoExists = await checkIfRepoExists(
+			foundUser.login,
+			repoName,
+			decryptedToken,
+		);
 
-			if(!repoCreated) {
+		if (!repoExists) {
+			const repoCreated = await createRepo(
+				foundUser.login,
+				repoName,
+				decryptedToken,
+			);
+
+			if (!repoCreated) {
 				return next(new appError(500, "Failed to create repository"));
 			}
 		}
@@ -290,9 +434,14 @@ const userController: UserController = {
 			return next(new appError(400, "Invalid README content"));
 		}
 
-		const readmeUpdated = await updateRepoReadme(foundUser.login, repoName, readmeContent, decryptedToken);
+		const readmeUpdated = await updateRepoReadme(
+			foundUser.login,
+			repoName,
+			readmeContent,
+			decryptedToken,
+		);
 
-		if(!readmeUpdated) {
+		if (!readmeUpdated) {
 			return next(new appError(500, "Failed to update README"));
 		}
 
@@ -300,9 +449,9 @@ const userController: UserController = {
 			success: true,
 			message: "README.md pushed successfully",
 			error: null,
-			data : null
+			data: null,
 		});
-	})
+	}),
 };
 
 export default userController;
@@ -325,4 +474,3 @@ export default userController;
 
 
 */
-

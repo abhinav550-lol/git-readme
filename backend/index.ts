@@ -41,8 +41,8 @@ app.use(
 		secret: process.env.SESSION_SECRET || "default-secret-change-me",
 		resave: false,
 		saveUninitialized: false,
-		//sameSite : "lax",
 		cookie: {
+			sameSite : isProduction ? "none" : "lax",
 			httpOnly: true,
 			secure: isProduction,
 			maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
