@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { axiosPost } from "./axiosMethods";
+import { axiosPost, axiosPut } from "./axiosMethods";
 import type { Response } from "./response";
 
 interface GenerateIntroductionPayload {
@@ -64,6 +64,12 @@ interface GenerateProfilePayload {
 
 interface GenerateProfileResponse extends Response<string> {}
 
+interface PutReadmePayload {
+  readmeContent: string;
+}
+
+interface PutReadmeResponse extends Response<null> {}
+
 const fn = {
   generateIntroduction: async (payload: GenerateIntroductionPayload) => {
     const res = await axiosPost<
@@ -125,6 +131,13 @@ const fn = {
     );
     return res;
   },
+  putReadme: async (payload: PutReadmePayload) => {
+    const res = await axiosPut<PutReadmeResponse, PutReadmePayload>(
+      `${import.meta.env.VITE_BACKEND_URL}/api/user/profile-repo/readme`,
+      payload,
+    );
+    return res;
+  },
 };
 
 const queries = {};
@@ -159,6 +172,11 @@ const mutations = {
   useGenerateProfile: () => {
     return useMutation({
       mutationFn: fn.generateProfile,
+    });
+  },
+  usePutReadme: () => {
+    return useMutation({
+      mutationFn: fn.putReadme,
     });
   },
 };

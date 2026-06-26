@@ -16,6 +16,7 @@ import ProtectedRoutes from './components/protectedRoutes'
 import Landing from './components/landing'
 import GuestRoutes from './components/guestRoutes'
 import { ProfileGeneration } from './components/profileGeneration'
+import Docs from './components/docs'
 
 
 function App() {
@@ -50,6 +51,8 @@ function App() {
     <BrowserRouter>
       <ToastContainer position="top-center" autoClose={3000} hideProgressBar={false} />
       <Routes>
+		
+		<Route path='/docs' element={<Docs />} />
 
 		{/* Public only Auth Routes */}
 		<Route path="/" element={<GuestRoutes />}>
